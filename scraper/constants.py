@@ -3,7 +3,6 @@ import os
 API_ENDPOINT = 'https://octopart.com/api/v4/internal'
 
 CURRENT_WD = os.getcwd()
-QUERY_FILENAME = "query_no_seller.txt"
 
 TMP_DIR = f"{CURRENT_WD}/tmp/"
 SAVE_DIR = f"{CURRENT_WD}/data/capacitor/aluminum_electrolytic/"
