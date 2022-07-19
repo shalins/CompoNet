@@ -1,0 +1,5 @@
+outs:
+- md5: ac30c2749f0e1345f70499a1339b85b5.dir
+  size: 448011310
+  nfiles: 25
+  path: RawData_Digikey
