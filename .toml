@@ -1,0 +1,22 @@
+# The black config must be kept in sync with script_checks.py
+[tool.black]
+line-length = 100
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.dvc
+  | \.ipynb_checkpoints
+  | \.vscode
+  | data
+  | ipynb
+  | passive_component_survey
+  | tmp
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_third_party = "wandb"
+
