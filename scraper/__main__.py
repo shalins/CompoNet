@@ -137,10 +137,11 @@ class OctopartScraper:
                     if count < 100:
                         break
 
-            path = save_data(self.all_data, SAVE_DIR, self.category)
             if perimeterx_error and len(self.all_data) > 0:
+                path = save_data(self.all_data, SAVE_DIR, f"{self.category} Intermediate")
                 print(f"{Colors.GREEN}\nSaving all intermediate data to {path}...\n{Colors.ENDC}")
             elif not perimeterx_error and len(self.all_data) >= 0:
+                path = save_data(self.all_data, SAVE_DIR, self.category)
                 print(f"{Colors.GREEN}\nAll done fetching components! Saved to file {path}\n{Colors.ENDC}")
                 break
 
