@@ -6,7 +6,7 @@ from metadata import get_attribute_payload, get_cookies, get_headers, get_parts_
 from queries import ATTRIBUTE_BUCKET_QUERY, PART_SEARCH_QUERY
 from tqdm import tqdm
 from tqdm.contrib.itertools import product
-from utils import save_data
+from utils import Colors, save_data
 
 
 class OctopartScraper:
@@ -83,13 +83,13 @@ class OctopartScraper:
                 )
 
             if len(self.attribute_buckets_keys) != len(self.attributes):
-                print("Fetching attribute buckets...")
+                print(f"{Colors.GREEN}\nFetching attribute buckets...\n{Colors.ENDC}")
 
                 for attribute in self.attributes:
                     response = self._get_buckets_response(attribute)
                     results, count = self._fetch_attributes(response)
                     if count == -1:
-                        print("PerimeterX Captcha Detected ")
+                        print(f"{Colors.RED}\nPERIMETERX CAPTCHA DETECTED\n{Colors.ENDC}")
                         perimeterx_error = True
                         break
                     self.attribute_buckets_keys.append(attribute)
@@ -115,20 +115,14 @@ class OctopartScraper:
                         ],
                     )
                 )
-                for start in tqdm(
-                    range(0, MAX_PAGE_OFFSET, MAX_RESULTS),
-                    desc="Going through pages...",
-                    position=1,
-                    leave=False,
-                    colour="blue",
-                ):
+                for start in range(0, MAX_PAGE_OFFSET, MAX_RESULTS):
                     response = self._get_parts_response(start, MAX_RESULTS, **arguments)
                     results, count = self._fetch_parts(response)
 
                     if count == 0:
                         break
                     elif count == -1:
-                        print("PerimeterX Captcha Detected ")
+                        print(f"{Colors.RED}\nPERIMETERX CAPTCHA DETECTED\n{Colors.ENDC}")
                         perimeterx_error = True
                         break
 
@@ -145,9 +139,9 @@ class OctopartScraper:
 
             path = save_data(self.all_data, SAVE_DIR, self.category)
             if perimeterx_error and len(self.all_data) > 0:
-                print(f"Saving all intermediate data to {path}...")
+                print(f"{Colors.GREEN}\nSaving all intermediate data to {path}...\n{Colors.ENDC}")
             elif not perimeterx_error and len(self.all_data) >= 0:
-                print(f"All done fetching components! Saved to file {path}")
+                print(f"{Colors.GREEN}\nAll done fetching components! Saved to file {path}\n{Colors.ENDC}")
                 break
 
 
@@ -157,13 +151,13 @@ def valid(category, attributes):
     """
     # Check if the category exists
     if category not in categories_cache:
-        print(f"Category {category} does not exist!")
+        print(f"{Colors.RED}\nCATEGORY {category} DOES NOT EXIST\n{Colors.ENDC}")
         return False
 
     # Check if the attributes exist
     for attribute in attributes:
         if attribute not in attributes_cache:
-            print(f"Attribute {attribute} does not exist!")
+            print(f"{Colors.RED}\nATTRIBUTE {attribute} DOES NOT EXIST\n{Colors.ENDC}")
             return False
 
     return True
@@ -181,11 +175,11 @@ def valid(category, attributes):
     "--attributes",
     "-a",
     multiple=True,
+    default=None,
     help="Attributes to group the components into smaller buckets for fetching \
-        (since Octopart only allows scraping a max of 1000 components per query). ",
-    default=["Capacitance", "Voltage"],
-    prompt='Please enter the comma-separated and in-order list of (string) attributes to \
-        filter by (e.g. ["Capacitance", "Voltage Rating", "Dielectric", "Case/Package"])',
+(since Octopart only allows scraping a max of 1000 components per query). \n For \
+example, run python3 scraper -a 'Capacitance' -a 'Voltage Rating'",
+    required=True,
 )
 @click.option(
     "--px",
@@ -199,7 +193,7 @@ def valid(category, attributes):
     "--user-agent",
     "-u",
     help="User-agent header that allows the Octopart server to recognize the scraper as \
-        a human and respond to requests.",
+a human and respond to requests.",
     default=DEFAULT_USER_AGENT,
     prompt="Please enter your user-agent header",
 )
@@ -209,8 +203,7 @@ def main(category, attributes, px, user_agent):
     attributes = list(map(lambda x: x.title(), attributes))
     if valid(category, attributes):
         print(
-            f"Scraping {category} with attributes {attributes}. Perimeter X key: {px}, \
-                User Agent: {user_agent}"
+            f"{Colors.GREEN}\nScraping {category} w/ attributes {attributes}. PX key: {px}, User Agent: {user_agent}\n{Colors.ENDC}"
         )
         scraper = OctopartScraper(category, list(attributes), px, user_agent)
         scraper.run()
