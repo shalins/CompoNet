@@ -1,24 +1,35 @@
+import signal
+
 import click
 import requests
 from categories import attributes_cache, categories_cache
-from constants import API_ENDPOINT, DEFAULT_USER_AGENT, MAX_PAGE_OFFSET, MAX_RESULTS, SAVE_DIR
+from constants import API_ENDPOINT, DEFAULT_USER_AGENT, MAX_PAGE_OFFSET, MAX_RESULTS
 from metadata import get_attribute_payload, get_cookies, get_headers, get_parts_payload
 from queries import ATTRIBUTE_BUCKET_QUERY, PART_SEARCH_QUERY
 from tqdm import tqdm
 from tqdm.contrib.itertools import product
-from utils import Colors, save_data
+from utils import Colors, load_current_place, remove_current_place, save_current_place, save_data
+
+from scraper.utils import remove_current_place
 
 
 class OctopartScraper:
     def __init__(self, category, attributes, px, user_agent):
-        self.current_spot = None
+        self.current_place = load_current_place()
         self.first_time = True
-        self.restarting = False
+        self.restarting = True
         self.all_data = {}
         self.category = category
         self.attributes = attributes
         self.perimeterx_key = px
         self.user_agent = user_agent
+        # signal.signal(signal.SIGINT, self._fail_gracefully)
+        signal.signal(signal.SIGUSR1, self._fail_gracefully)
+        signal.siginterrupt(signal.SIGUSR1, False)
+
+    def _fail_gracefully(self, *args):
+        path = save_data(self.all_data, self.category, intermediate=True)
+        print(f"\n{Colors.GREEN}Saving all intermediate data to {path}{Colors.ENDC}\n")
 
     def _get_request_params(self):
         cookies = get_cookies(self.perimeterx_key)
@@ -72,79 +83,83 @@ class OctopartScraper:
 
         perimeterx_error = False
         while True:
-            if perimeterx_error:
-                perimeterx_error = False
-                self.restarting = True
-                self.perimeterx_key = click.prompt(
-                    "Please enter a Perimeter X key:", type=str, default=self.perimeterx_key
-                )
-                self.user_agent = click.prompt(
-                    "Please enter your user-agent header:", type=str, default=self.user_agent
-                )
-
-            if len(self.attribute_buckets_keys) != len(self.attributes):
-                print(f"{Colors.GREEN}\nFetching attribute buckets...\n{Colors.ENDC}")
-
-                for attribute in self.attributes:
-                    response = self._get_buckets_response(attribute)
-                    results, count = self._fetch_attributes(response)
-                    if count == -1:
-                        print(f"{Colors.RED}\nPERIMETERX CAPTCHA DETECTED\n{Colors.ENDC}")
-                        perimeterx_error = True
-                        break
-                    self.attribute_buckets_keys.append(attribute)
-                    self.attribute_buckets_values.append(results)
-                    print(f"{attribute} (with {count} buckets) fetched!")
-
-            ranges = [range(0, len(a)) for a in self.attribute_buckets_values]
-            for tup in product(*ranges, desc="Fetching parts...", position=0, colour="green"):
+            try:
                 if perimeterx_error:
-                    break
-
-                if self.restarting and self.current_spot is not None and self.current_spot != tup:
-                    continue
-                self.restarting = False
-                self.current_spot = tup
-
-                arguments = dict(
-                    zip(
-                        self.attribute_buckets_keys,
-                        [
-                            self.attribute_buckets_values[idx][value]
-                            for (idx, value) in enumerate(tup)
-                        ],
+                    perimeterx_error = False
+                    self.restarting = True
+                    self.perimeterx_key = click.prompt(
+                        f"\n{Colors.BLUE}Please enter a Perimeter X key:{Colors.ENDC}", type=str, default=self.perimeterx_key
                     )
-                )
-                for start in range(0, MAX_PAGE_OFFSET, MAX_RESULTS):
-                    response = self._get_parts_response(start, MAX_RESULTS, **arguments)
-                    results, count = self._fetch_parts(response)
+                    self.user_agent = click.prompt(
+                        f"\n{Colors.BLUE}Please enter your user-agent header:{Colors.ENDC}", type=str, default=self.user_agent
+                    )
 
-                    if count == 0:
-                        break
-                    elif count == -1:
-                        print(f"{Colors.RED}\nPERIMETERX CAPTCHA DETECTED\n{Colors.ENDC}")
-                        perimeterx_error = True
+                if len(self.attribute_buckets_keys) != len(self.attributes):
+                    print("\n")
+                    for attribute in self.attributes:
+                        attribute_key = attributes_cache[attribute]
+                        response = self._get_buckets_response(attribute_key)
+                        results, count = self._fetch_attributes(response)
+                        if count == -1:
+                            print(f"\n\n{Colors.BOLD}PERIMETERX CAPTCHA DETECTED{Colors.ENDC}\n\n")
+                            perimeterx_error = True
+                            break
+                        self.attribute_buckets_keys.append(attribute_key)
+                        self.attribute_buckets_values.append(results)
+                        print(f"{Colors.GREEN}Fetched attribute {attribute}, split into {count} buckets.{Colors.ENDC}")
+                    print("\n")
+                ranges = [range(0, len(a)) for a in self.attribute_buckets_values]
+                for tup in product(*ranges, desc=f"{Colors.GREEN}Fetching Parts{Colors.ENDC}", position=0, colour="green"):
+                    if perimeterx_error:
                         break
 
-                    if self.first_time:
-                        self.first_time = False
-                        self.all_data = results
-                    else:
-                        self.all_data["data"]["search"]["results"].extend(
-                            results["data"]["search"]["results"]
+                    if self.restarting and self.current_place is not None and self.current_place != tup:
+                        continue
+                    self.restarting = False
+                    self.current_place = tup
+
+                    arguments = dict(
+                        zip(
+                            self.attribute_buckets_keys,
+                            [
+                                self.attribute_buckets_values[idx][value]
+                                for (idx, value) in enumerate(tup)
+                            ],
                         )
+                    )
+                    for start in tqdm(range(0, MAX_PAGE_OFFSET, MAX_RESULTS), desc=f"{Colors.BLUE}Fetching Pages{Colors.ENDC}", position=1, colour="blue", leave=False):
+                        response = self._get_parts_response(start, MAX_RESULTS, **arguments)
+                        results, count = self._fetch_parts(response)
 
-                    if count < 100:
-                        break
+                        if count == 0:
+                            break
+                        elif count == -1:
+                            print(f"\n\n{Colors.BOLD}PERIMETERX CAPTCHA DETECTED{Colors.ENDC}\n\n")
+                            perimeterx_error = True
+                            break
 
-            if perimeterx_error and len(self.all_data) > 0:
-                path = save_data(self.all_data, SAVE_DIR, f"{self.category} Intermediate")
-                print(f"{Colors.GREEN}\nSaving all intermediate data to {path}...\n{Colors.ENDC}")
-            elif not perimeterx_error and len(self.all_data) >= 0:
-                path = save_data(self.all_data, SAVE_DIR, self.category)
-                print(f"{Colors.GREEN}\nAll done fetching components! Saved to file {path}\n{Colors.ENDC}")
-                break
+                        if self.first_time:
+                            self.first_time = False
+                            self.all_data = results
+                        else:
+                            self.all_data["data"]["search"]["results"].extend(
+                                results["data"]["search"]["results"]
+                            )
 
+                        if count < 100:
+                            break
+
+                if perimeterx_error and len(self.all_data) > 0:
+                    path = save_data(self.all_data, self.category, intermediate=True)
+                    save_current_place(self.current_place)
+                    print(f"\n{Colors.GREEN}Saving all intermediate data to {path}{Colors.ENDC}\n")
+                elif not perimeterx_error and len(self.all_data) >= 0:
+                    path = save_data(self.all_data, self.category)
+                    remove_current_place()
+                    print(f"\n{Colors.GREEN}All done fetching components! Saved to file {path}{Colors.ENDC}\n")
+                    break
+            except:
+                self._fail_gracefully()
 
 def valid(category, attributes):
     """
@@ -188,7 +203,7 @@ example, run python3 scraper -a 'Capacitance' -a 'Voltage Rating'",
     default=None,
     type=str,
     required=True,
-    prompt="Please enter a Perimeter X key",
+    prompt=f"\n{Colors.BLUE}Please enter a Perimeter X key{Colors.ENDC}",
 )
 @click.option(
     "--user-agent",
@@ -196,16 +211,18 @@ example, run python3 scraper -a 'Capacitance' -a 'Voltage Rating'",
     help="User-agent header that allows the Octopart server to recognize the scraper as \
 a human and respond to requests.",
     default=DEFAULT_USER_AGENT,
-    prompt="Please enter your user-agent header",
+    prompt=f"\n{Colors.BLUE}Please enter your user-agent header{Colors.ENDC}",
 )
 def main(category, attributes, px, user_agent):
-    category = category.title()
+    # category = category.title()
     # Convert from tuple to list.
-    attributes = list(map(lambda x: x.title(), attributes))
+    # attributes = list(map(lambda x: x.title(), attributes))
     if valid(category, attributes):
-        print(
-            f"{Colors.GREEN}\nScraping {category} w/ attributes {attributes}. PX key: {px}, User Agent: {user_agent}\n{Colors.ENDC}"
-        )
+        print("\n\n")
+        print(f"{Colors.PURPLE}Category:\t\t {category}{Colors.ENDC}")
+        print(f"{Colors.MAGENTA}Attributes:\t\t {attributes}{Colors.ENDC}")
+        print(f"{Colors.LIGHT_BLUE}Perimeter X Key:\t {px}{Colors.ENDC}")
+        print(f"{Colors.CYAN}User-agent:\t\t {user_agent}{Colors.ENDC}")
         scraper = OctopartScraper(category, list(attributes), px, user_agent)
         scraper.run()
     exit(1)

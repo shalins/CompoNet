@@ -1,7 +1,8 @@
 import json
 import os
+import pickle
 
-from constants import SAVE_FILE_EXT
+from constants import CURRENT_PLACE_FILE, SAVE_DIR, SAVE_FILE_EXT
 
 
 def get_query_name(query):
@@ -11,14 +12,55 @@ def get_query_name(query):
     return re.search(r"\w+(?=(\s*)?\()", query).group()
 
 
-def save_data(data, directory, filename):
-    os.makedirs(directory, exist_ok=True)
-    i = 0
-    while os.path.exists(f"{directory}{filename}{i}.{SAVE_FILE_EXT}"):
-        i += 1
-    with (open(f"{directory}{filename}{i}.{SAVE_FILE_EXT}", "w")) as outfile:
-        json.dump(data, outfile)
-    return f"{directory}{filename}{i}.{SAVE_FILE_EXT}"
+def _extend_existing_json(new_data, filename):
+    with open(filename, 'r+') as file:
+        # First we load existing data into a dict.
+        file_data = json.load(file)
+        # Join new_data with file_data inside emp_details
+        file_data["data"]["search"]["results"].append(new_data)
+        # Sets file's current position at offset.
+        file.seek(0)
+        # convert back to json.
+        json.dump(file_data, file)
+
+
+def save_data(data, filename, intermediate=False):
+    os.makedirs(SAVE_DIR, exist_ok=True)
+    inter_path = f"{SAVE_DIR}{filename} Intermediate.{SAVE_FILE_EXT}"
+    final_path = f"{SAVE_DIR}{filename}.{SAVE_FILE_EXT}"
+    if intermediate:
+        # if the file exists, then extend the data with the new data
+        # otherwise, just write the data
+        if os.path.exists(inter_path):
+            _extend_existing_json(data["data"]["search"]["results"], inter_path)
+        else:
+            with open(inter_path, "w") as outfile:
+                json.dump(data, outfile)
+    else:
+        # if the intermediate file exists, then extend the data with the new data
+        # otherwise, just write the data
+        if os.path.exists(inter_path):
+            _extend_existing_json(data["data"]["search"]["results"], inter_path)
+            os.rename(inter_path, final_path)
+        else:
+            with open(final_path, "w") as outfile:
+                json.dump(data, outfile)
+
+def save_current_place(data):
+    os.makedirs(SAVE_DIR, exist_ok=True)
+    with open(f"{SAVE_DIR}{CURRENT_PLACE_FILE}", "wb") as outfile:
+        pickle.dump(data, outfile)
+
+def load_current_place():
+    try:
+        with open(f"{SAVE_DIR}{CURRENT_PLACE_FILE}", "rb") as infile:
+            return pickle.load(infile)
+    except FileNotFoundError:
+        return None
+
+def remove_current_place():
+    if os.path.exists(f"{SAVE_DIR}{CURRENT_PLACE_FILE}"):
+        os.remove(f"{SAVE_DIR}{CURRENT_PLACE_FILE}")
 
 class Colors: # You may need to change color settings
     RED = '\033[31m'
@@ -26,3 +68,8 @@ class Colors: # You may need to change color settings
     GREEN = '\033[32m'
     YELLOW = '\033[33m'
     BLUE = '\033[34m'
+    PURPLE = '\033[35m'
+    LIGHT_BLUE = '\033[94m'
+    MAGENTA = "\033[0;95m"
+    CYAN = "\033[0;96m"
+    BOLD = "\033[1m"
