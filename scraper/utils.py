@@ -17,7 +17,7 @@ def _extend_existing_json(new_data, filename):
         # First we load existing data into a dict.
         file_data = json.load(file)
         # Join new_data with file_data inside emp_details
-        file_data["data"]["search"]["results"].append(new_data)
+        file_data["data"]["search"]["results"].extend(new_data)
         # Sets file's current position at offset.
         file.seek(0)
         # convert back to json.
@@ -36,6 +36,7 @@ def save_data(data, filename, intermediate=False):
         else:
             with open(inter_path, "w") as outfile:
                 json.dump(data, outfile)
+        return inter_path
     else:
         # if the intermediate file exists, then extend the data with the new data
         # otherwise, just write the data
@@ -45,6 +46,11 @@ def save_data(data, filename, intermediate=False):
         else:
             with open(final_path, "w") as outfile:
                 json.dump(data, outfile)
+        return final_path
+
+def remove_current_place():
+    if os.path.exists(f"{SAVE_DIR}{CURRENT_PLACE_FILE}"):
+        os.remove(f"{SAVE_DIR}{CURRENT_PLACE_FILE}")
 
 def save_current_place(data):
     os.makedirs(SAVE_DIR, exist_ok=True)
@@ -57,10 +63,6 @@ def load_current_place():
             return pickle.load(infile)
     except FileNotFoundError:
         return None
-
-def remove_current_place():
-    if os.path.exists(f"{SAVE_DIR}{CURRENT_PLACE_FILE}"):
-        os.remove(f"{SAVE_DIR}{CURRENT_PLACE_FILE}")
 
 class Colors: # You may need to change color settings
     RED = '\033[31m'

@@ -10,8 +10,6 @@ from tqdm import tqdm
 from tqdm.contrib.itertools import product
 from utils import Colors, load_current_place, remove_current_place, save_current_place, save_data
 
-from scraper.utils import remove_current_place
-
 
 class OctopartScraper:
     def __init__(self, category, attributes, px, user_agent):
@@ -23,9 +21,8 @@ class OctopartScraper:
         self.attributes = attributes
         self.perimeterx_key = px
         self.user_agent = user_agent
-        # signal.signal(signal.SIGINT, self._fail_gracefully)
-        signal.signal(signal.SIGUSR1, self._fail_gracefully)
-        signal.siginterrupt(signal.SIGUSR1, False)
+        # signal.signal(signal.SIGUSR1, self._fail_gracefully)
+        # signal.siginterrupt(signal.SIGUSR1, False)
 
     def _fail_gracefully(self, *args):
         path = save_data(self.all_data, self.category, intermediate=True)
@@ -153,6 +150,8 @@ class OctopartScraper:
                     path = save_data(self.all_data, self.category, intermediate=True)
                     save_current_place(self.current_place)
                     print(f"\n{Colors.GREEN}Saving all intermediate data to {path}{Colors.ENDC}\n")
+                    self.all_data = {}
+                    self.first_time = True
                 elif not perimeterx_error and len(self.all_data) >= 0:
                     path = save_data(self.all_data, self.category)
                     remove_current_place()

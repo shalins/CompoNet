@@ -3,7 +3,7 @@ query FilterModalSearch($attribute_names: [String!]!, $currency: String!, \
   $filters: Map, $in_stock_only: Boolean, $q: String) {
     search(currency: $currency, filters: $filters, in_stock_only: $in_stock_only, q: $q) {
         hits
-        spec_aggs(attribute_names: $attribute_names, size: 1000000000) {
+        spec_aggs(attribute_names: $attribute_names, size: 100) {
             buckets {
                 count
                 display_value
