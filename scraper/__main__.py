@@ -1,10 +1,10 @@
-import signal
-
+# import signal
 import click
 import requests
 from categories import attributes_cache, categories_cache
 from constants import API_ENDPOINT, DEFAULT_USER_AGENT, MAX_PAGE_OFFSET, MAX_RESULTS
 from metadata import get_attribute_payload, get_cookies, get_headers, get_parts_payload
+from plyer import notification
 from queries import ATTRIBUTE_BUCKET_QUERY, PART_SEARCH_QUERY
 from tqdm import tqdm
 from tqdm.contrib.itertools import product
@@ -84,6 +84,12 @@ class OctopartScraper:
                 if perimeterx_error:
                     perimeterx_error = False
                     self.restarting = True
+                    notification.notify(
+                        title = 'PerimeterX Captcha',
+                        message = 'PerimeterX error, please enter another PerimeterX key.',
+                        app_icon = 'cap.ico',
+                        timeout = 10,
+                    )
                     self.perimeterx_key = click.prompt(
                         f"\n{Colors.BLUE}Please enter a Perimeter X key:{Colors.ENDC}", type=str, default=self.perimeterx_key
                     )
