@@ -13,7 +13,7 @@ def get_query_name(query):
 
 
 def _extend_existing_json(new_data, filename):
-    with open(filename, 'r+') as file:
+    with open(filename, "r+") as file:
         # First we load existing data into a dict.
         file_data = json.load(file)
         # Join new_data with file_data inside emp_details
@@ -48,14 +48,17 @@ def save_data(data, filename, intermediate=False):
                 json.dump(data, outfile)
         return final_path
 
+
 def remove_current_place():
     if os.path.exists(f"{SAVE_DIR}{CURRENT_PLACE_FILE}"):
         os.remove(f"{SAVE_DIR}{CURRENT_PLACE_FILE}")
+
 
 def save_current_place(data):
     os.makedirs(SAVE_DIR, exist_ok=True)
     with open(f"{SAVE_DIR}{CURRENT_PLACE_FILE}", "wb") as outfile:
         pickle.dump(data, outfile)
+
 
 def load_current_place():
     try:
@@ -64,14 +67,15 @@ def load_current_place():
     except FileNotFoundError:
         return None
 
-class Colors: # You may need to change color settings
-    RED = '\033[31m'
-    ENDC = '\033[m'
-    GREEN = '\033[32m'
-    YELLOW = '\033[33m'
-    BLUE = '\033[34m'
-    PURPLE = '\033[35m'
-    LIGHT_BLUE = '\033[94m'
+
+class Colors:  # You may need to change color settings
+    RED = "\033[31m"
+    ENDC = "\033[m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    PURPLE = "\033[35m"
+    LIGHT_BLUE = "\033[94m"
     MAGENTA = "\033[0;95m"
     CYAN = "\033[0;96m"
     BOLD = "\033[1m"

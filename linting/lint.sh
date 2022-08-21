@@ -52,9 +52,9 @@ fi
 isort_status="$?"
 info "Running black..."
 if [ "$fix_files" = true ]; then
-    black --config=.toml "${lint_paths[@]}"
+    black --config=.toml "${lint_paths[@]}" --preview
 else
-    black --check --config=.toml "${lint_paths[@]}"
+    black --check --config=.toml "${lint_paths[@]}" --preview
 fi
 black_status="$?"
 info "Running flake8..."
