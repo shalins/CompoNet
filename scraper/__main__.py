@@ -14,7 +14,6 @@ from utils import Colors, load_current_place, remove_current_place, save_current
 class OctopartScraper:
     def __init__(self, category, attributes, px, user_agent):
         self.current_place = load_current_place()
-        self.first_time = True
         self.restarting = True
         self.all_data = {}
         self.category = category
@@ -25,8 +24,10 @@ class OctopartScraper:
         # signal.siginterrupt(signal.SIGUSR1, False)
 
     def _fail_gracefully(self, *args):
-        path = save_data(self.all_data, self.category, intermediate=True)
-        print(f"\n{Colors.GREEN}Saving all intermediate data to {path}{Colors.ENDC}\n")
+        if len(self.all_data) > 0:
+            path = save_data(self.all_data, self.category, intermediate=True)
+            save_current_place(self.current_place)
+            print(f"\n{Colors.GREEN}FAILED GRACEFULLY\nSaving all intermediate data to {path}{Colors.ENDC}\n")
 
     def _get_request_params(self):
         cookies = get_cookies(self.perimeterx_key)
@@ -80,6 +81,7 @@ class OctopartScraper:
 
         perimeterx_error = False
         while True:
+            print(len(self.all_data))
             try:
                 if perimeterx_error:
                     if len(self.all_data) > 0:
@@ -89,7 +91,6 @@ class OctopartScraper:
                             f"\n{Colors.GREEN}Saving all intermediate data to {path}{Colors.ENDC}\n"
                         )
                         self.all_data = {}
-                        self.first_time = True
 
                     perimeterx_error = False
                     self.restarting = True
@@ -109,6 +110,7 @@ class OctopartScraper:
                         type=str,
                         default=self.user_agent,
                     )
+                    continue
 
                 if len(self.attribute_buckets_keys) != len(self.attributes):
                     print("\n")
@@ -172,8 +174,7 @@ class OctopartScraper:
                             perimeterx_error = True
                             break
 
-                        if self.first_time:
-                            self.first_time = False
+                        if len(self.all_data) <= 0:
                             self.all_data = results
                         else:
                             self.all_data["data"]["search"]["results"].extend(
@@ -183,7 +184,7 @@ class OctopartScraper:
                         if count < 100:
                             break
 
-                if not perimeterx_error and len(self.all_data) >= 0:
+                if not perimeterx_error and len(self.all_data) > 0:
                     path = save_data(self.all_data, self.category)
                     remove_current_place()
                     print(

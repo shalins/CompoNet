@@ -8,11 +8,13 @@
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.11.47",
+    "@types/plotly.js": "^2.12.2",
     "@types/react": "^18.0.15",
     "@types/react-dom": "^18.0.6",
     "@types/react-plotly.js": "^2.5.1",
     "plotly": "^1.0.6",
     "plotly.js": "^2.13.3",
+    "plotly.js-basic-dist-min": "^2.14.0",
     "plotly.js-dist": "^2.13.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -23,8 +25,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "react-scripts --max_old_space_size=8192 start",
+    "build": "react-scripts --max_old_space_size=8192 build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -45,8 +47,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@types/plotly.js": "^2.12.2"
   }
 }
