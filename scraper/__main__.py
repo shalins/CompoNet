@@ -27,7 +27,10 @@ class OctopartScraper:
         if len(self.all_data) > 0:
             path = save_data(self.all_data, self.category, intermediate=True)
             save_current_place(self.current_place)
-            print(f"\n{Colors.GREEN}FAILED GRACEFULLY\nSaving all intermediate data to {path}{Colors.ENDC}\n")
+            print(
+                f"\n{Colors.GREEN}FAILED GRACEFULLY\nSaving all intermediate data to"
+                f" {path}{Colors.ENDC}\n"
+            )
 
     def _get_request_params(self):
         cookies = get_cookies(self.perimeterx_key)

@@ -1,63 +1,37 @@
 import react from "react";
-//import Plot from "react-plotly.js";
-import Plotly from "plotly.js-basic-dist-min";
-import createPlotlyComponent from "react-plotly.js/factory";
 import Plot from "react-plotly.js";
 import { useEffect, useState } from "react";
-
-//const Plot = createPlotlyComponent(Plotly);
+import { Component, parse } from "./parse";
 
 export default function GraphForm() {
-  const processCapacitance = (data: any) => {
-    return data.map((item: any) => {
-      const reg = /([-0-9.])/g;
-      const displayValue = item.part_specs_capacitance_display_value;
-      let num = parseFloat(displayValue.match(reg).join(""));
-      // Convert everything to farads.
-      if (displayValue.includes("pF")) {
-        num *= 1e-12;
-      } else if (displayValue.includes("nF")) {
-        num *= 1e-9;
-      } else if (displayValue.includes("µF")) {
-        num *= 1e-6;
-      } else if (displayValue.includes("mF")) {
-        num *= 1e-3;
-      }
-      return num;
-    });
-  };
-
-  const processPrice = (data: any) => {
-    return data.map((item: any) => {
-      const reg = /([-0-9.])/g;
-      let val = item.part_median_price_1000_converted_price;
-      val = val.match(reg).join("");
-      val = parseFloat(val);
-      return val;
-    });
-  };
-
-  const [capacitance, setCapacitance] = useState();
-  const [price, setPrice] = useState();
+  const [components, setComponents] = useState<Component[]>();
 
   useEffect(() => {
-    fetch("/desc?" + new URLSearchParams({ component: "6332" }))
+    const searchParams = new URLSearchParams();
+    searchParams.append("categories", "6332");
+    searchParams.append("categories", "6334");
+    searchParams.append("attributes", "Capacitance");
+    searchParams.append("attributes", "Weight");
+
+    fetch("/api?" + searchParams.toString())
       .then((res) => res.json())
       .then((data) => {
-        const capacitances = processCapacitance(data);
-        const prices = processPrice(data);
-        setCapacitance(capacitances);
-        setPrice(prices);
+        //const capacitances = processCapacitance(data);
+        //const prices = processPrice(data);
+        //setCapacitance(capacitances);
+        //setPrice(prices);
+        const components = parse(
+          data,
+          ["Ceramic Capacitors", "Mica Capacitors"],
+          ["Capacitance", "Weight"]
+        );
+        setComponents(components);
       });
   }, []);
 
   useEffect(() => {
-    console.log("data: ", capacitance);
-  }, [capacitance]);
-
-  useEffect(() => {
-    console.log("data: ", price);
-  }, [price]);
+    console.log("data: ", components);
+  }, [components]);
 
   return (
     <>
@@ -98,8 +72,8 @@ export default function GraphForm() {
           <Plot
             data={[
               {
-                x: capacitance,
-                y: price,
+                x: components?.[0]?.axes?.[0]?.data,
+                y: components?.[0]?.axes?.[1]?.data,
                 type: "scattergl",
                 mode: "markers",
                 marker: { color: "navyblue", size: 4 },
@@ -115,10 +89,10 @@ export default function GraphForm() {
                 ticksuffix: "F",
               },
               yaxis: {
-                title: "Price [$]",
+                title: "Weight [g]",
                 type: "log",
                 autorange: true,
-                tickprefix: "$",
+                ticksuffix: "g",
               },
             }}
             useResizeHandler

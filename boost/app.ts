@@ -1,6 +1,7 @@
 import express from "express";
 import log from "loglevel";
 import { Pool } from "pg";
+import { generateQuery } from "utils/queries";
 
 const host = "ec2-34-233-115-14.compute-1.amazonaws.com:5432";
 const database = "dfu56m15dkhh46";
@@ -17,23 +18,19 @@ const pool = new Pool({
   },
 });
 
-const get = async (req: any, res: any) => {
+const fetchData = async (req: any, res: any) => {
   try {
     const client = await pool.connect();
-    const sql = `SELECT part_specs_capacitance_display_value,
-				 part_median_price_1000_converted_price
-				 FROM public.all 
-				 WHERE part_category_id=$1 AND
-				 part_specs_capacitance_display_value IS NOT NULL AND
-				 part_median_price_1000_converted_price IS NOT NULL AND
-				 part_median_price_1000_converted_price != $2 AND
-				 part_specs_capacitance_display_value != $2`;
-    console.log("this is being logged", req.query.component);
-    const component = req.query.component;
-    const rows = (await client.query(sql, [component, "nan"]))?.rows;
-    // const data = processData(rows);
+    const categories = req.query.categories;
+    const attributes = req.query.attributes; //["548", "547"];
+    let response: { [key: string]: any } = {};
+    for (const category of categories) {
+      const query = generateQuery(category, attributes);
+      const result = await client.query(query);
+      response[category] = result?.rows;
+    }
 
-    res.send(rows);
+    res.send(response);
     client.release();
   } catch (error) {
     res.status(400).send(error);
@@ -48,11 +45,7 @@ if (process.env.LOG_LEVEL) {
 const app = express();
 const port = process.env.PORT || 5555;
 
-app.get("/api", (req, res) => {
-  res.json({ message: "Hello from server!" });
-});
-
-app.get("/desc", get);
+app.get("/api", fetchData);
 
 // Listen on the specified port.
 const server = app.listen(port, () => {
