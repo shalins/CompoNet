@@ -1,16 +1,26 @@
-import { attributeShortnames, categoryIds } from "utils/octopart";
+import { categories } from "./utils/octopart";
 export const numbersOnlyRegex = /([-0-9.])/g;
+export const metricRegex = /([yzafpnµumcdahkMGTPEZY])/g;
+
+const getSuffix = (data: string[]) => {
+  return data[0]
+    ?.replace(numbersOnlyRegex, "")
+    ?.replace(metricRegex, "")
+    .trim();
+};
 
 const processMetric = (data: string[]) => {
   return data.map((val: string) => {
     let num = parseFloat(val?.match(numbersOnlyRegex)?.join("") ?? "0");
-    // Convert everything to farads.
+    // Convert everything to base units.
     if (val.includes("y")) {
       num *= 1e-24;
     } else if (val.includes("z")) {
       num *= 1e-21;
     } else if (val.includes("a")) {
       num *= 1e-18;
+    } else if (val.includes("f")) {
+      num *= 1e-15;
     } else if (val.includes("p")) {
       num *= 1e-12;
     } else if (val.includes("n")) {
@@ -56,53 +66,63 @@ export interface Axis {
 }
 
 export interface Component {
-  name: string;
+  category: string;
   axes: Axis[];
+  mpns: string[];
+  manufacturerNames: string[];
 }
 
-const processPrice = (data: any) => {
-  return data.map((item: any) => {
-    let val = item.part_median_price_1000_converted_price;
-    val = val.match(numbersOnlyRegex).join("");
-    val = parseFloat(val);
-    return val;
-  });
-};
-
-export const parse = (
-  input: any,
-  categories: string[],
-  attributes: string[]
-) => {
-  // We want to parse the JSON response from the server and
-  // convert it into a format that we can then use to generate
-  // the various plots for the user.
-
-  // Convert the attribute names to shortnames and then to column names.
-  const attributeColumns = attributes.map((name) => {
-    const shortname = attributeShortnames[name];
-    return `part_specs_${shortname}_display_value`;
-  });
-
+// We want to parse the JSON response from the server and
+// convert it into a format that we can then use to generate
+// the various plots for the user.
+//
+// Data comes in the form of a JSON response, formatted as follows:
+// {
+//  "6331": [
+//            {
+//            "part_mpn": "C0805C104K5RACTU",
+//            "part_manufacturer_name": "KEMET",
+//            "part_spec_ripplecurrent_display_value": "0.1 mA",
+//            "part_spec_capacitance_display_value": "100 nF",
+//            },
+//            { ... },
+//          ],
+//   "6332": [ ... ]
+// }
+export const parse = (input: { [key: string]: any }) => {
   const components: Component[] = [];
 
-  // First go through all the categories and get the attributes.
-  categories.forEach((name) => {
-    const id = categoryIds[name];
-    const componentData = input[id];
-    // get x and y values based on the attributes.
+  for (const [id, attributes] of Object.entries(input)) {
+    const category =
+      categories.find((category) => category.id === id)?.name ?? "Undefined";
     const axes: Axis[] = [];
 
-    attributeColumns.forEach((column) => {
-      const axis = componentData.map((item: any) => {
-        return item[column];
-      });
-      // Process the data based on the attribute.
-      const values = processMetric(axis);
-      axes.push({ data: values, suffix: "F" });
+    // First, go through the data and get all the attribute names.
+    // From the example above, we would get:
+    // ["part_mpn", "part_manufacturer_name", ...]
+    const attributeNames = Object.keys(attributes[0]);
+
+    // Since we don't want to plot the manufacturer name or the mpn,
+    // we store them separately.
+    let mpns: string[] = [];
+    let manufacturerNames: string[] = [];
+
+    attributeNames.forEach((name) => {
+      if (name === "part_mpn") {
+        mpns = attributes.map((val: any) => val[name]);
+      } else if (name === "part_manufacturer_name") {
+        manufacturerNames = attributes.map((val: any) => val[name]);
+      } else {
+        // For all other attributes, we want to get the data so we can plot it.
+        const axis = attributes.map((row: { [key: string]: any }) => row[name]);
+        const values = processMetric(axis);
+        const suffix = getSuffix(axis);
+        axes.push({ data: values, suffix });
+      }
     });
-    components.push({ name, axes });
-    //console.log(axes);
-  });
+
+    components.push({ category, axes, mpns, manufacturerNames });
+  }
+
   return components;
 };

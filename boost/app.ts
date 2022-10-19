@@ -1,7 +1,8 @@
+import path from "path";
 import express from "express";
 import log from "loglevel";
 import { Pool } from "pg";
-import { generateQuery } from "utils/queries";
+import { generateQuery } from "./client/src/utils/queries";
 
 const host = "ec2-34-233-115-14.compute-1.amazonaws.com:5432";
 const database = "dfu56m15dkhh46";
@@ -18,11 +19,15 @@ const pool = new Pool({
   },
 });
 
+const toArray = (data: any) => {
+  return Array.isArray(data) ? data : [data];
+};
+
 const fetchData = async (req: any, res: any) => {
   try {
     const client = await pool.connect();
-    const categories = req.query.categories;
-    const attributes = req.query.attributes; //["548", "547"];
+    const categories = toArray(req.query.categories);
+    const attributes = toArray(req.query.attributes);
     let response: { [key: string]: any } = {};
     for (const category of categories) {
       const query = generateQuery(category, attributes);
@@ -51,3 +56,13 @@ app.get("/api", fetchData);
 const server = app.listen(port, () => {
   console.log(`Signaling Server Listening on Port ${port}`);
 });
+
+
+// Have node serve the files for our built React app
+app.use(express.static(path.resolve(__dirname, './client/build')));
+
+// If we don't recognize the route, render the React app
+app.get('*', (req, res) => {
+	res.sendFile(path.resolve(__dirname, './client/build', 'index.html'));
+});
+
