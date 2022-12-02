@@ -2,14 +2,23 @@ import { categories } from "./utils/octopart";
 export const numbersOnlyRegex = /([-0-9.])/g;
 export const metricRegex = /([yzafpnµumcdahkMGTPEZY])/g;
 
-const getSuffix = (data: string[]) => {
-  return data[0]
+const getPrefix = (name: string, data: string[]) => {
+  if (name.toLowerCase().includes("price")) {
+    return "$";
+  } else {
+    return undefined;
+  }
+};
+
+const getSuffix = (name: string, data: string[]) => {
+  const suffix = data[0]
     ?.replace(numbersOnlyRegex, "")
     ?.replace(metricRegex, "")
     .trim();
+  return suffix === "" ? undefined : suffix;
 };
 
-const processMetric = (data: string[]) => {
+const standarizeUnits = (data: string[]) => {
   return data.map((val: string) => {
     let num = parseFloat(val?.match(numbersOnlyRegex)?.join("") ?? "0");
     // Convert everything to base units.
@@ -63,6 +72,7 @@ export interface Axis {
   data: Array<number>;
   prefix?: string;
   suffix?: string;
+  affix?: string;
 }
 
 export interface Component {
@@ -115,9 +125,20 @@ export const parse = (input: { [key: string]: any }) => {
       } else {
         // For all other attributes, we want to get the data so we can plot it.
         const axis = attributes.map((row: { [key: string]: any }) => row[name]);
-        const values = processMetric(axis);
-        const suffix = getSuffix(axis);
-        axes.push({ data: values, suffix });
+        const values = standarizeUnits(axis);
+        let suffix = getSuffix(name, axis);
+        let prefix = getPrefix(name, axis);
+        let affix = "#";
+        // If we have a suffix or a prefix, use if. If we have both, prefer the suffix.
+        affix = prefix ? prefix : affix;
+        affix = suffix ? suffix : affix;
+
+        axes.push({
+          data: values,
+          suffix: suffix,
+          prefix: prefix,
+          affix: affix,
+        });
       }
     });
 

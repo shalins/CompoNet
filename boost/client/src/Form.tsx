@@ -2,7 +2,7 @@ import { ChangeEvent } from "react";
 import Plot from "react-plotly.js";
 import { useEffect, useState } from "react";
 import { Component, parse } from "./parse";
-import { categories, attributes, ComponentSpec } from "./utils/octopart";
+import { categories, attributes } from "./utils/octopart";
 
 export default function GraphForm() {
   const [components, setComponents] = useState<Component[]>();
@@ -63,6 +63,7 @@ export default function GraphForm() {
     fetch("/api?" + searchParams.toString())
       .then((res) => res.json())
       .then((data) => {
+        console.log(JSON.stringify(data).substring(0, 1000), "//[trimmed]");
         const components = parse(data);
         setComponents(components);
       });
@@ -121,23 +122,21 @@ MPN: <b>${component.mpns[idx]}</b><br>
     const layout: { [key: string]: any } = {
       autosize: true,
       xaxis: {
-        title:
-          checkedAttributeNames[0] +
-          ` [${components[0].axes[0]?.suffix ?? "#"}]`,
+        title: checkedAttributeNames[0] + ` [${components[0].axes[0]?.affix}]`,
         type: "log",
         autorange: true,
         ticksuffix: components[0].axes[0]?.suffix ?? "",
+        tickprefix: components[0].axes[0]?.prefix ?? "",
         mirror: true,
         ticks: "inside",
         showline: true,
       },
       yaxis: {
-        title:
-          checkedAttributeNames[1] +
-          ` [${components[0].axes[1]?.suffix ?? "#"}]`,
+        title: checkedAttributeNames[1] + ` [${components[0].axes[1]?.affix}]`,
         type: "log",
         autorange: true,
         ticksuffix: components[0].axes[1]?.suffix ?? "",
+        tickprefix: components[0].axes[1]?.prefix ?? "",
         mirror: true,
         ticks: "inside",
         showline: true,

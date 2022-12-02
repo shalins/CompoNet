@@ -1,12 +1,12 @@
-// Contains the mappings from the Octopart component and spec IDs to the corresponding display values and shortnames.
-export interface ComponentSpec {
+// Contains the metadata for the Octopart component and attributes spec IDs to the corresponding display values and shortnames.
+export interface OctopartMetadata {
   id: string;
   name: string;
   shortname?: string;
 }
 
 // https://octopart.com/api/v4/values#categories
-export const categories: ComponentSpec[] = [
+export const categories: OctopartMetadata[] = [
   { id: "4165", name: "Passive Components" },
   { id: "4166", name: "Capacitors" },
   { id: "6331", name: "Aluminum Electrolytic Capacitors" },
@@ -26,7 +26,20 @@ export const categories: ComponentSpec[] = [
 ];
 
 // https://octopart.com/api/v4/values#attributes
-export const attributes: ComponentSpec[] = [
+export const attributes: OctopartMetadata[] = [
+  // Custom attributes.
+  //
+  // We include custom types so we can fetch them from the database
+  // even if they're not officially documented attributes, i.e. computed
+  // attributes like volume. To avoid conflicts with Octopart attribute IDs,
+  // we make custom IDs negative.
+  {
+    id: "-1",
+    name: "Price",
+    shortname: "part_median_price_1000_converted_price",
+  },
+
+  // Octopart attributes.
   { id: "548", shortname: "capacitance", name: "Capacitance" },
   { id: "842", shortname: "case_package", name: "Case/Package" },
   { id: "384", shortname: "contactplating", name: "Contact Plating" },
