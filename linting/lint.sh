@@ -39,6 +39,7 @@ done
 # convert lint_paths from array to string
 if [ "${#lint_paths[@]}" -eq 0 ]; then
     lint_paths+=("scraper/")
+		lint_paths+=("processor/")
     echo "$lint_paths"
 fi
 

@@ -3,6 +3,7 @@ export interface OctopartMetadata {
   id: string;
   name: string;
   shortname?: string;
+  units?: string;
 }
 
 // https://octopart.com/api/v4/values#categories
