@@ -1,3 +1,7 @@
+# These are the mappings from Octopart's internal representations for
+# categories and attributes to the ones we refer to in the post-processing 
+# code.
+
 # https://octopart.com/api/v4/values#categories
 categories_cache = {
     "Passive Components": "4165",
@@ -113,6 +117,41 @@ attributes_cache = {
     "Connector Type": "connectortype",
 }
 
+dielectric_power_fit = {
+    "C1": {
+        "k": 11.67,
+        "alpha": 0.05585,
+        "beta": 0.0665,
+    },
+    "C2": {
+        "k": 8.406,
+        "alpha": -0.0045,
+        "beta": 0.0272,
+    },
+    "PET": {
+        "k": 1.175,
+        "alpha": -0.0212,
+        "beta": -0.0167,
+    },
+    "PP": {
+        "k": 0.934,
+        "alpha": -0.0207,
+        "beta": -0.0250,
+    },
+    # In the paper, this is listed as "Through-hole Al-Elec".
+    "aluminum": {
+        "k": 1.296,
+        "alpha": -0.0732,
+        "beta": -0.0434,
+    },
+    # In the paper, this is listed as "Molded Tantalum".
+    "tantalum": {
+        "k": 4.928,
+        "alpha": 0.0482,
+        "beta": 0.049,
+    },
+}
+
 ceramic_class = {
     "A": "C1",
     "B": "C2",
@@ -126,6 +165,7 @@ ceramic_class = {
     "BV": "C3",
     "BX": "C2",
     "C": "C2",
+    "C0G": "C1",
     "C0G, NP0 (1B)": "C1",
     "C0G, NP0": "C1",
     "C0H": "C1",
@@ -137,13 +177,18 @@ ceramic_class = {
     "CH": "C1",
     "CL": "C1",
     "D": "C3",
+    # For Kyocera it's C1
     "E": "C3",
     "F": "C3",
     "GBBL": "C2",
-    #'H3M': nan,
+    # "H3M": nan,
     "JB": "C2",
+    "K2000": "C1",
+    "K4000": "C1",
+    # For Johanson it's C1
     "L": "C3",
     "M": "C1",
+    "M3K": "C1",
     "N": "C1",
     "N1500": "C1",
     "N2000": "C1",
@@ -169,19 +214,19 @@ ceramic_class = {
     "R7": "C1",
     "R85": "C1",
     "S2H": "C1",
-    #'S3B': nan,
+    # "S3B": nan,
     "S3L": "C1",
     "S3N": "C1",
     "SL": "C1",
     "SL/GP": "C1",
     "T": "C2",
-    #'T2H': nan,
-    #'U2J': nan,
-    #'U2K': nan,
-    #'U2M': nan,
-    #'UNJ': nan,
-    #'UX': nan,
-    #'X0U': nan,
+    "T2H": "C1",
+    "U2J": "C1",
+    "U2K": "C1",
+    "U2M": "C1",
+    # "UNJ": "nan",
+    # "UX": nan,
+    "X0U": "C2",
     "X5E": "C2",
     "X5F": "C2",
     "X5P": "C2",
@@ -198,28 +243,128 @@ ceramic_class = {
     "X7T": "C3",
     "X7U": "C3",
     "X8G": "C2",
-    #'X8L': nan,
-    #'X8M': nan,
+    "X8L": "C2",
+    "X8M": "C2",
     "X8R": "C2",
-    #'XAN': nan,
-    #'Y': nan,
+    # "XAN": nan,
+    # "Y": nan,
+    "Y5E": "C2",
     "Y5F": "C2",
-    #'Y5P (B)': nan,
+    "Y5P (B)": "C2",
     "Y5P": "C2",
     "Y5R": "C2",
     "Y5S": "C2",
     "Y5T": "C3",
     "Y5U": "C3",
+    "Y5V": "C2",
     "Y5U (E)": "C3",
     "Y5V (F)": "C2",
     "Y6P": "C2",
     "YSP": "C2",
-    #'Z4V': nan,
+    "Z4V": "C2",
+    "Z5F": "C2",
     "Z5P": "C2",
     "Z5T": "C2",
     "Z5U": "C3",
     "Z5V": "C3",
-    #'ZLM': nan,
-    "Y5V": "C2",
-    "C0G": "C1",
+    "Z5S": "C3",
+    # "ZLM": nan,
 }
+
+units = {
+    "dielectric": {
+        "unit": "n/a",
+        "affix": "suffix",
+    },
+    "price": {
+        "unit": "$",
+        "affix": "prefix",
+    },
+    "capacitance": {
+        "unit": "F",
+        "affix": "suffix",
+    },
+    "current": {
+        "unit": "A",
+        "affix": "suffix",
+    },
+    "voltage": {
+        "unit": "V",
+        "affix": "suffix",
+    },
+    "volume": {
+        "unit": "mm^3",
+        "affix": "suffix",
+    },
+    "esr": {
+        "unit": "Ω",
+        "affix": "suffix",
+    },
+    "esr_frequency": {
+        "unit": "Hz",
+        "affix": "suffix",
+    },
+    "mass": {
+        "unit": "mg",
+        "affix": "suffix",
+    },
+    "energy": {
+        "unit": "μJ",
+        "affix": "suffix",
+    },
+    "power": {
+        "unit": "W",
+        "affix": "suffix",
+    },
+    "volumetric_energy_density": {
+        "unit": "μJ/mm^3",
+        "affix": "suffix",
+    },
+    "gravimetric_energy_density": {
+        "unit": "μJ/mg",
+        "affix": "suffix",
+    },
+    "volumetric_power_density": {
+        "unit": "W/mm^3",
+        "affix": "suffix",
+    },
+    "gravimetric_power_density": {
+        "unit": "W/mg",
+        "affix": "suffix",
+    },
+    "energy_per_cost": {
+        "unit": "μJ/$",
+        "affix": "suffix",
+    },
+}
+
+# This is the dictionary of all the column names that we want to keep 
+# in the final dataframe, and eventually in the database. Even if most
+# of the keys are the same as the values, this still allows us to easily
+# change the name of a column in the future and drop columns that are
+# not in this dictionary.
+column_map = {
+    "category": "category",
+    "manufacturer": "manufacturer",
+    "mpn": "mpn",
+    "ceramic_class": "ceramic_class",
+    "dielectric": "dielectric",
+    "capacitance": "capacitance",
+    "voltage": "voltage",
+    "current": "current",
+    "esr": "esr",
+    "esr_frequency": "esr_frequency",
+    "esr_frequency_low": "esr_frequency_low",
+    "esr_frequency_high": "esr_frequency_high",
+    "price": "price",
+    "volume": "volume",
+    "mass": "mass",
+    "energy": "energy",
+    "power": "power",
+    "volumetric_energy_density": "volumetric_energy_density",
+    "gravimetric_energy_density": "gravimetric_energy_density",
+    "volumetric_power_density": "volumetric_power_density",
+    "gravimetric_power_density": "gravimetric_power_density",
+    "energy_per_cost": "energy_per_cost",
+}
+
