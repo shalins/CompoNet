@@ -54,15 +54,13 @@ app.get("/api", fetchData);
 
 // Listen on the specified port.
 const server = app.listen(port, () => {
-  console.log(`Signaling Server Listening on Port ${port}`);
+  console.log(`CompoNet PostgreSQL Server Listening on Port ${port}`);
 });
-
 
 // Have node serve the files for our built React app
-app.use(express.static(path.resolve(__dirname, './client/build')));
+app.use(express.static(path.resolve(__dirname, "./client/build")));
 
 // If we don't recognize the route, render the React app
-app.get('*', (req, res) => {
-	res.sendFile(path.resolve(__dirname, './client/build', 'index.html'));
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "./client/build", "index.html"));
 });
-
