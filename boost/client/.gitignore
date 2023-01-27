@@ -5,11 +5,12 @@
 /.pnp
 .pnp.js
 
-# testing
-/coverage
-
 # production
 /build
+/target
+/Cargo.lock
+/componet
+/public/componet_bg.wasm
 
 # misc
 .DS_Store
