@@ -12,3 +12,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasm-bindgen = "^0.2.80"
+js-sys = "^0.3.6"
+serde_json = "^1.0.91"
+prost = "^0.11.6"
+

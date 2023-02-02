@@ -1,0 +1,220 @@
+{
+	"properties": [
+		{
+			"name": "Capacitors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 4166
+		},
+		{
+			"name": "Inductors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 4190
+		},
+		{
+			"name": "Aluminum Electrolytic Capacitors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 6331
+		},
+		{
+			"name": "Ceramic Capacitors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 6332
+		},
+		{
+			"name": "Film Capacitors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 6333
+		},
+		{
+			"name": "Mica Capacitors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 6334
+		},
+		{
+			"name": "Polymer Capacitors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 6335
+		},
+		{
+			"name": "Tantalum Capacitors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 6336
+		},
+		{
+			"name": "Variable Inductors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 4191
+		},
+		{
+			"name": "Fixed Inductors",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 4193
+		},
+		{
+			"name": "Transformers",
+			"column": "category",
+			"type": "category",
+			"unit": null,
+			"affix": null,
+			"octopartId": 4194
+		},
+		{
+			"name": "Dielectric",
+			"column": "dielectric",
+			"type": "attribute",
+			"unit": null,
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Price",
+			"column": "price",
+			"type": "attribute",
+			"unit": "$",
+			"affix": "prefix",
+			"octopartId": null
+		},
+		{
+			"name": "Capacitance",
+			"column": "capacitance",
+			"type": "attribute",
+			"unit": "F",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Current",
+			"column": "current",
+			"type": "attribute",
+			"unit": "A",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Voltage",
+			"column": "voltage",
+			"type": "attribute",
+			"unit": "V",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Volume", 
+			"column": "volume",
+			"type": "attribute",
+			"unit": "mm^3",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "ESR",
+			"column": "esr",
+			"type": "attribute",
+			"unit": "Ω",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "ESR Frequency",
+			"column": "esr_frequency",
+			"type": "attribute",
+			"unit": "Hz",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Mass",
+			"column": "mass",
+			"type": "attribute",
+			"unit": "mg",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Energy",
+			"column": "energy",
+			"type": "attribute",
+			"unit": "μJ",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Power",
+			"column": "power",
+			"type": "attribute",
+			"unit": "W",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Volumetric Energy Denisty",
+			"column": "volumetric_energy_density",
+			"type": "attribute",
+			"unit": "μJ/mm^3",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+			"name": "Gravimetric Energy Density",
+			"column": "gravimetric_energy_density",
+			"type": "attribute",
+			"unit": "μJ/mg",
+			"affix": "suffix",
+			"octopartId": null
+		},
+		{
+				"name": "Volumetric Power Density",
+				"column": "volumetric_power_density",
+				"type": "attribute",
+				"unit": "W/mm^3",
+				"affix": "suffix",
+				"octopartId": null
+		},
+		{
+				"name": "Gravimetric Power Density",
+				"column": "gravimetric_power_density",
+				"type": "attribute",
+				"unit": "W/mg",
+				"affix": "suffix",
+				"octopartId": null
+		},
+		{
+				"name": "Energy Per Cost", 
+				"column": "energy_per_cost",
+				"type": "attribute",
+				"unit": "μJ/$",
+				"affix": "suffix",
+				"octopartId": null
+		}
+	]
+}

@@ -186,20 +186,24 @@ def classify_dielectric(df: pd.DataFrame) -> pd.DataFrame:
     df[column_map["dielectric"]] = df.apply(_get_dielectric, axis=1)
     return df
 
+
 def process_category(df: pd.DataFrame) -> pd.DataFrame:
     """Processes the category column to have a more human-readable column name"""
     df[column_map["category"]] = df["part_category_id"]
     return df
+
 
 def process_manufacturer(df: pd.DataFrame) -> pd.DataFrame:
     """Processes the manufacturer column to have a more human-readable column name"""
     df[column_map["manufacturer"]] = df["part_manufacturer_name"]
     return df
 
+
 def process_mpn(df: pd.DataFrame) -> pd.DataFrame:
     """Processes the manufacturer part number column to have a more human-readable column name"""
     df[column_map["mpn"]] = df["part_mpn"]
     return df
+
 
 def process_capacitance(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -478,8 +482,8 @@ def drop_columns(df: pd.DataFrame, cols=[]) -> pd.DataFrame:
     df = df.drop(columns=cols)
     return df
 
+
 def drop_all_except(df: pd.DataFrame, cols=[]) -> pd.DataFrame:
     """Drops all columns except the specified columns from the dataframe"""
     df = df[cols]
     return df
-

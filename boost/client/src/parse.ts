@@ -1,4 +1,4 @@
-import { categories } from "./utils/octopart";
+import { _categories } from "./utils/octopart";
 export const numbersOnlyRegex = /([-0-9.])/g;
 export const metricRegex = /([yzafpnµumcdahkMGTPEZY])/g;
 
@@ -104,7 +104,8 @@ export const parse = (input: { [key: string]: any }) => {
 
   for (const [id, attributes] of Object.entries(input)) {
     const category =
-      categories.find((category) => category.id === id)?.name ?? "Undefined";
+      _categories.find((category) => (category.id as unknown as string) === id)
+        ?.name ?? "Undefined";
     const axes: Axis[] = [];
 
     // First, go through the data and get all the attribute names.

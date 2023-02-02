@@ -2,7 +2,8 @@ import { ChangeEvent } from "react";
 import Plot from "react-plotly.js";
 import { useEffect, useState } from "react";
 import { Component, parse } from "./parse";
-import { categories, attributes } from "./utils/octopart";
+import { ColumnType, columns } from "./utils/octopart";
+import * as componet from "componet/componet";
 
 export default function GraphForm() {
   const [components, setComponents] = useState<Component[]>();
@@ -61,7 +62,10 @@ export default function GraphForm() {
     });
 
     fetch("/api?" + searchParams.toString())
-      .then((res) => res.json())
+      .then((res) => {
+        console.log(res);
+        return res.json();
+      })
       .then((data) => {
         console.log(JSON.stringify(data).substring(0, 1000), "//[trimmed]");
         const components = parse(data);
@@ -111,10 +115,18 @@ MPN: <b>${component.mpns[idx]}</b><br>
 
   const graphLayout = (components: Component[]) => {
     // get the attribute names from the checked attributes.
+    //const checkedAttributeNames: string[] = checkedAttributes.map((id) => {
+    //  return (
+    //    attributes.find((attribute) => {
+    //      return attribute.id === id;
+    //    })?.name ?? "Undefined"
+    //  );
+    //});
+
     const checkedAttributeNames: string[] = checkedAttributes.map((id) => {
       return (
-        attributes.find((attribute) => {
-          return attribute.id === id;
+        columns.find((column) => {
+          return column.octopartId === id;
         })?.name ?? "Undefined"
       );
     });
@@ -186,41 +198,55 @@ MPN: <b>${component.mpns[idx]}</b><br>
           <div className="five columns">
             <label>Component List</label>
 
-            {categories.map((category) => {
-              return (
-                <>
-                  <input
-                    type="checkbox"
-                    key={category.id}
-                    name="category"
-                    value={category.name}
-                    onChange={(event) =>
-                      handleOnCategoryChanged(event, category.id)
-                    }
-                  />
-                  <label>{category.name}</label>
-                </>
-              );
-            })}
+            {columns
+              .filter((column) => {
+                return column.type === ColumnType.Category;
+              })
+              .map((category) => {
+                return (
+                  <>
+                    <input
+                      type="checkbox"
+                      key={category.column}
+                      name="category"
+                      value={category.name}
+                      onChange={(event) => {
+                        if (category.octopartId) {
+                          handleOnCategoryChanged(
+                            event,
+                            category.octopartId as string
+                          );
+                        }
+                      }}
+                    />
+                    <label>{category.name}</label>
+                  </>
+                );
+              })}
           </div>
           <div className="three columns">
             <label>Attribute List</label>
-            {attributes.map((attribute) => {
-              return (
-                <>
-                  <input
-                    type="checkbox"
-                    key={attribute.id}
-                    name="attributes"
-                    value={attribute.name}
-                    onChange={(event) =>
-                      handleOnAttributeChanged(event, attribute.id)
-                    }
-                  />
-                  <label>{attribute.name}</label>
-                </>
-              );
-            })}
+
+            {columns
+              .filter((column) => {
+                return column.type === ColumnType.Attribute;
+              })
+              .map((attribute) => {
+                return (
+                  <>
+                    <input
+                      type="checkbox"
+                      key={attribute.column}
+                      name="attributes"
+                      value={attribute.name}
+                      onChange={(event) =>
+                        handleOnAttributeChanged(event, attribute.column)
+                      }
+                    />
+                    <label>{attribute.name}</label>
+                  </>
+                );
+              })}
           </div>
           <div className="three columns">
             <Plot

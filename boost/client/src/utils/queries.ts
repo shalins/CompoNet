@@ -1,11 +1,13 @@
-import { attributes } from "./octopart";
+import { _attributes } from "./octopart";
 
 // We want to geenrate a SQL query that selects attributes that we wanted
 // from all the different categories that we want.
 export const generateQuery = (categoryId: string, attributeIds: string[]) => {
   // Convert all the attrbiute ids to shortnames.
   const queryAttributes = attributeIds.map((id) => {
-    return attributes.find((attribute) => attribute.id === id)?.shortname;
+    return _attributes.find(
+      (attribute) => (attribute.id as unknown as string) === id
+    )?.shortname;
   });
 
   // Then generate the query.

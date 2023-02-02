@@ -1,5 +1,5 @@
 # These are the mappings from Octopart's internal representations for
-# categories and attributes to the ones we refer to in the post-processing 
+# categories and attributes to the ones we refer to in the post-processing
 # code.
 
 # https://octopart.com/api/v4/values#categories
@@ -338,7 +338,7 @@ units = {
     },
 }
 
-# This is the dictionary of all the column names that we want to keep 
+# This is the dictionary of all the column names that we want to keep
 # in the final dataframe, and eventually in the database. Even if most
 # of the keys are the same as the values, this still allows us to easily
 # change the name of a column in the future and drop columns that are
@@ -367,4 +367,3 @@ column_map = {
     "gravimetric_power_density": "gravimetric_power_density",
     "energy_per_cost": "energy_per_cost",
 }
-
