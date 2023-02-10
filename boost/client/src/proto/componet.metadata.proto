@@ -1,0 +1,39 @@
+syntax="proto3";
+
+import "componet.proto";
+
+package componet.metadata;
+
+enum ColumnType {
+	Category = 0;
+	Attribute = 1;
+	Other = 2;
+}
+
+message DatabaseMetadata {
+	string name = 1;
+	string column = 2;
+	ColumnType type = 3;
+	optional string unit = 4;
+	optional Affix affix = 5;
+	optional int64 octopart_id = 6;
+}
+
+message OctopartMetadata {
+	int64 id = 1;
+	string name = 2;
+	optional string shortname = 3;
+	optional string units = 4;
+}
+
+message Columns {
+	repeated DatabaseMetadata columns = 1;
+}
+
+message Categories {
+	repeated OctopartMetadata categories = 1;
+}
+
+message Attributes {
+	repeated OctopartMetadata attributes = 1;
+}

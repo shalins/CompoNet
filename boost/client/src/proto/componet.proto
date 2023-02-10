@@ -1,0 +1,8 @@
+syntax="proto3";
+
+package componet;
+
+enum Affix {
+	PREFIX = 0;
+	SUFFIX = 1;
+}

@@ -11,8 +11,8 @@
     "@types/pg": "^8.6.5",
     "@types/react": "^18.0.18",
     "@types/react-dom": "^18.0.6",
-    "componet": "link:./client/componet",
     "archiver": "^5.3.1",
+    "componet": "link:./client/componet",
     "express": "^4.18.1",
     "loglevel": "^1.8.0",
     "multiselect-react-dropdown": "^2.0.25",
@@ -25,6 +25,7 @@
     "react-router-dom": "^6.3.0",
     "react-scripts": "^5.0.1",
     "ts-node": "^10.9.1",
+    "ts-proto": "^1.139.0",
     "typescript": "^4.8.2",
     "web-vitals": "^2.1.4",
     "yarn": "v2.4.3"

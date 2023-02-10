@@ -1,291 +1,316 @@
-import properties from "../json/properties.json";
+import columns from "../json/columns.json";
 import categories from "../json/categories.json";
 import attributes from "../json/attributes.json";
 
-export enum Affix {
-  Prefix,
-  Suffix,
-}
+import {
+  DatabaseMetadata,
+  OctopartMetadata,
+  Columns,
+  Categories,
+  Attributes,
+} from "../proto/ts/componet.metadata";
 
-export enum ColumnType {
-  Category,
-  Attribute,
-  Other,
-}
+//export enum Affix {
+//  Prefix,
+//  Suffix,
+//}
+//
+//export enum ColumnType {
+//  Category,
+//  Attribute,
+//  Other,
+//}
 
-export interface DatabaseMetadata {
-  name: string;
-  column: string;
-  type: ColumnType;
-  unit?: string | null;
-  affix?: Affix | null;
-  // TODO(SHALIN): Remove string type.
-  octopartId?: number | string | null;
-}
+//export interface DatabaseMetadata {
+//  name: string;
+//  column: string;
+//  type: ColumnType;
+//  unit?: string | null;
+//  affix?: Affix | null;
+//  // TODO(SHALIN): Remove string type.
+//  octopartId?: number | string | null;
+//}
+
+export const COLUMNS: DatabaseMetadata[] = Columns.fromJSON(
+  columns
+).columns.map((column) => {
+  return {
+    name: column.name,
+    column: column.column,
+    type: column.type,
+    unit: column.unit,
+    affix: column.affix,
+    octopartId: column.octopartId,
+  };
+});
+export const CATEGORIES: OctopartMetadata[] =
+  Categories.fromJSON(categories).categories;
+export const ATTRIBUTES: OctopartMetadata[] =
+  Attributes.fromJSON(attributes).attributes;
 
 // Import and parse the `properties.json` file to create the `DatabaseMetadata` object.
-export const columns: DatabaseMetadata[] = properties.properties.map(
-  (property) => {
-    const { name, column, type, unit, affix, octopartId } = property;
-    return {
-      name,
-      column,
-      type: getColumnType(type),
-      unit: nullToUndefined(unit),
-      affix: getAffix(nullToUndefined(affix)),
-      octopartId: nullToUndefined(octopartId),
-    };
-  }
-);
+//export const columns: DatabaseMetadata[] = properties.properties.map(
+//  (property) => {
+//    const { name, column, type, unit, affix, octopartId } = property;
+//    return {
+//      name,
+//      column,
+//      type: getColumnType(type),
+//      unit: nullToUndefined(unit),
+//      affix: getAffix(nullToUndefined(affix)),
+//      octopartId: nullToUndefined(octopartId),
+//    };
+//  }
+//);
 
 function nullToUndefined<T>(value: T | null): T | undefined {
   return value === null ? undefined : value;
 }
 
-function getAffix(affix?: string): Affix | undefined {
-  if (!affix) {
-    return undefined;
-  }
-  switch (affix) {
-    case "prefix":
-      return Affix.Prefix;
-    case "suffix":
-      return Affix.Suffix;
-    default:
-      throw new Error(`Invalid affix: ${affix}`);
-  }
-}
+//function getAffix(affix?: string): Affix | undefined {
+//  if (!affix) {
+//    return undefined;
+//  }
+//  switch (affix) {
+//    case "prefix":
+//      return Affix.Prefix;
+//    case "suffix":
+//      return Affix.Suffix;
+//    default:
+//      throw new Error(`Invalid affix: ${affix}`);
+//  }
+//}
+//
+//function getColumnType(type: string): ColumnType {
+//  switch (type) {
+//    case "category":
+//      return ColumnType.Category;
+//    case "attribute":
+//      return ColumnType.Attribute;
+//    case "other":
+//      return ColumnType.Other;
+//    default:
+//      throw new Error(`Invalid column type: ${type}`);
+//  }
+//}
+//
+//export interface OctopartMetadata {
+//  id: number;
+//  name: string;
+//  shortname?: string | null;
+//  units?: string | null;
+//}
+//
+//export const _categories: OctopartMetadata[] = categories.categories.map(
+//  (category) => {
+//    const { id, name, shortname } = category;
+//    return {
+//      id,
+//      name,
+//      shortname: nullToUndefined(shortname),
+//    };
+//  }
+//);
+//
+//export const _attributes: OctopartMetadata[] = attributes.attributes.map(
+//  (attribute) => {
+//    const { id, name, shortname } = attribute;
+//    return {
+//      id,
+//      name,
+//      shortname: nullToUndefined(shortname),
+//    };
+//  }
+//);
 
-function getColumnType(type: string): ColumnType {
-  switch (type) {
-    case "category":
-      return ColumnType.Category;
-    case "attribute":
-      return ColumnType.Attribute;
-    case "other":
-      return ColumnType.Other;
-    default:
-      throw new Error(`Invalid column type: ${type}`);
-  }
-}
-
-export interface OctopartMetadata {
-  id: number;
-  name: string;
-  shortname?: string | null;
-  units?: string | null;
-}
-
-export const _categories: OctopartMetadata[] = categories.categories.map(
-  (category) => {
-    const { id, name, shortname } = category;
-    return {
-      id,
-      name,
-      shortname: nullToUndefined(shortname),
-    };
-  }
-);
-
-export const _attributes: OctopartMetadata[] = attributes.attributes.map(
-  (attribute) => {
-    const { id, name, shortname } = attribute;
-    return {
-      id,
-      name,
-      shortname: nullToUndefined(shortname),
-    };
-  }
-);
-
-export const _columns: DatabaseMetadata[] = [
-  // These are the categories that we want to display in the graph.
-  // https://octopart.com/api/v4/values#categories
-  //
-  // We also want to include custom categories that allow for more
-  // granular comparison of data.
-  {
-    name: "Capacitors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "4166",
-  },
-  {
-    name: "Inductors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "4190",
-  },
-  {
-    name: "Aluminum Electrolytic Capacitors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "6331",
-  },
-  {
-    name: "Ceramic Capacitors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "6332",
-  },
-  {
-    name: "Film Capacitors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "6333",
-  },
-  {
-    name: "Mica Capacitors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "6334",
-  },
-  {
-    name: "Polymer Capacitors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "6335",
-  },
-  {
-    name: "Tantalum Capacitors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "6336",
-  },
-  {
-    name: "Variable Inductors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "4191",
-  },
-  {
-    name: "Fixed Inductors",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "4193",
-  },
-  {
-    name: "Transformers",
-    column: "category",
-    type: ColumnType.Category,
-    octopartId: "4194",
-  },
-
-  // These are the attributes that we want to display in the graph.
-  // https://octopart.com/api/v4/values#attributes
-  {
-    name: "Dielectric",
-    column: "dielectric",
-    type: ColumnType.Attribute,
-    unit: "n/a",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Price",
-    column: "price",
-    type: ColumnType.Attribute,
-    unit: "$",
-    affix: Affix.Prefix,
-  },
-  {
-    name: "Capacitance",
-    column: "capacitance",
-    type: ColumnType.Attribute,
-    unit: "F",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Current",
-    column: "current",
-    type: ColumnType.Attribute,
-    unit: "A",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Voltage",
-    column: "voltage",
-    type: ColumnType.Attribute,
-    unit: "V",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Volume",
-    column: "volume",
-    type: ColumnType.Attribute,
-    unit: "mm^3",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "ESR",
-    column: "esr",
-    type: ColumnType.Attribute,
-    unit: "Ω",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "ESR Frequency",
-    column: "esr_frequency",
-    type: ColumnType.Attribute,
-    unit: "Hz",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Mass",
-    column: "mass",
-    type: ColumnType.Attribute,
-    unit: "mg",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Energy",
-    column: "energy",
-    type: ColumnType.Attribute,
-    unit: "μJ",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Power",
-    column: "power",
-    type: ColumnType.Attribute,
-    unit: "W",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Volumetric Energy Denisty",
-    column: "volumetric_energy_density",
-    type: ColumnType.Attribute,
-    unit: "μJ/mm^3",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Gravimetric Energy Density",
-    column: "gravimetric_energy_density",
-    type: ColumnType.Attribute,
-    unit: "μJ/mg",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Volumetric Power Density",
-    column: "volumetric_power_density",
-    type: ColumnType.Attribute,
-    unit: "W/mm^3",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Gravimetric Power Density",
-    column: "gravimetric_power_density",
-    type: ColumnType.Attribute,
-    unit: "W/mg",
-    affix: Affix.Suffix,
-  },
-  {
-    name: "Energy Per Cost",
-    column: "energy_per_cost",
-    type: ColumnType.Attribute,
-    unit: "μJ/$",
-    affix: Affix.Suffix,
-  },
-];
+//export const _columns: DatabaseMetadata[] = [
+//  // These are the categories that we want to display in the graph.
+//  // https://octopart.com/api/v4/values#categories
+//  //
+//  // We also want to include custom categories that allow for more
+//  // granular comparison of data.
+//  {
+//    name: "Capacitors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "4166",
+//  },
+//  {
+//    name: "Inductors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "4190",
+//  },
+//  {
+//    name: "Aluminum Electrolytic Capacitors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "6331",
+//  },
+//  {
+//    name: "Ceramic Capacitors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "6332",
+//  },
+//  {
+//    name: "Film Capacitors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "6333",
+//  },
+//  {
+//    name: "Mica Capacitors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "6334",
+//  },
+//  {
+//    name: "Polymer Capacitors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "6335",
+//  },
+//  {
+//    name: "Tantalum Capacitors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "6336",
+//  },
+//  {
+//    name: "Variable Inductors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "4191",
+//  },
+//  {
+//    name: "Fixed Inductors",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "4193",
+//  },
+//  {
+//    name: "Transformers",
+//    column: "category",
+//    type: ColumnType.Category,
+//    octopartId: "4194",
+//  },
+//
+//  // These are the attributes that we want to display in the graph.
+//  // https://octopart.com/api/v4/values#attributes
+//  {
+//    name: "Dielectric",
+//    column: "dielectric",
+//    type: ColumnType.Attribute,
+//    unit: "n/a",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Price",
+//    column: "price",
+//    type: ColumnType.Attribute,
+//    unit: "$",
+//    affix: Affix.Prefix,
+//  },
+//  {
+//    name: "Capacitance",
+//    column: "capacitance",
+//    type: ColumnType.Attribute,
+//    unit: "F",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Current",
+//    column: "current",
+//    type: ColumnType.Attribute,
+//    unit: "A",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Voltage",
+//    column: "voltage",
+//    type: ColumnType.Attribute,
+//    unit: "V",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Volume",
+//    column: "volume",
+//    type: ColumnType.Attribute,
+//    unit: "mm^3",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "ESR",
+//    column: "esr",
+//    type: ColumnType.Attribute,
+//    unit: "Ω",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "ESR Frequency",
+//    column: "esr_frequency",
+//    type: ColumnType.Attribute,
+//    unit: "Hz",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Mass",
+//    column: "mass",
+//    type: ColumnType.Attribute,
+//    unit: "mg",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Energy",
+//    column: "energy",
+//    type: ColumnType.Attribute,
+//    unit: "μJ",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Power",
+//    column: "power",
+//    type: ColumnType.Attribute,
+//    unit: "W",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Volumetric Energy Denisty",
+//    column: "volumetric_energy_density",
+//    type: ColumnType.Attribute,
+//    unit: "μJ/mm^3",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Gravimetric Energy Density",
+//    column: "gravimetric_energy_density",
+//    type: ColumnType.Attribute,
+//    unit: "μJ/mg",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Volumetric Power Density",
+//    column: "volumetric_power_density",
+//    type: ColumnType.Attribute,
+//    unit: "W/mm^3",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Gravimetric Power Density",
+//    column: "gravimetric_power_density",
+//    type: ColumnType.Attribute,
+//    unit: "W/mg",
+//    affix: Affix.Suffix,
+//  },
+//  {
+//    name: "Energy Per Cost",
+//    column: "energy_per_cost",
+//    type: ColumnType.Attribute,
+//    unit: "μJ/$",
+//    affix: Affix.Suffix,
+//  },
+//];
 
 // Contains the metadata for the Octopart component and attributes spec IDs to the corresponding display values and shortnames.
 export interface _OctopartMetadata {

@@ -1,0 +1,23 @@
+syntax="proto3";
+
+import "componet.proto";
+
+package componet.graph;
+
+message Axis {
+	repeated double data = 1;
+	optional Affix affix = 2;
+	optional string unit = 3;
+}
+
+message Component {
+	string category = 1;
+	repeated Axis axes = 2;
+	repeated string mpns = 3;
+	repeated string manufacturers = 4;
+}
+
+message Components {
+	repeated Component components = 1;
+}
+

@@ -1,22 +1,26 @@
 import { ChangeEvent } from "react";
 import Plot from "react-plotly.js";
 import { useEffect, useState } from "react";
-import { Component, parse } from "./parse";
-import { ColumnType, columns } from "./utils/octopart";
-import * as componet from "componet/componet";
+//import { Component, parse } from "./parse";
+//import { ColumnType, columns } from "./utils/octopart";
+import { QueryParser } from "componet/componet";
+import { Components, Component } from "./proto/ts/componet.graph";
+import { ColumnType } from "./proto/ts/componet.metadata";
+import { Affix } from "./proto/ts/componet";
+import { COLUMNS, ATTRIBUTES, CATEGORIES } from "./utils/octopart";
 
 export default function GraphForm() {
   const [components, setComponents] = useState<Component[]>();
 
-  const [checkedCategories, setCheckedCategories] = useState<string[]>([]);
+  const [checkedCategories, setCheckedCategories] = useState<number[]>([]);
   const [checkedAttributes, setCheckedAttributes] = useState<string[]>([]);
 
   const handleOnCategoryChanged = (
     event: ChangeEvent<HTMLInputElement>,
-    id: string
+    id: number
   ) => {
     if (event.target.checked) {
-      setCheckedCategories((oldCheckedCategories: string[]) => [
+      setCheckedCategories((oldCheckedCategories: number[]) => [
         ...oldCheckedCategories,
         id,
       ]);
@@ -54,11 +58,11 @@ export default function GraphForm() {
     }
 
     checkedCategories.forEach((id) => {
-      searchParams.append("categories", id);
+      searchParams.append("categories", id as unknown as string);
     });
 
     checkedAttributes.forEach((id) => {
-      searchParams.append("attributes", id);
+      searchParams.append("attributes", id as unknown as string);
     });
 
     fetch("/api?" + searchParams.toString())
@@ -67,8 +71,16 @@ export default function GraphForm() {
         return res.json();
       })
       .then((data) => {
-        console.log(JSON.stringify(data).substring(0, 1000), "//[trimmed]");
-        const components = parse(data);
+        const componentString = QueryParser.parse(
+          JSON.stringify(data)
+        ) as unknown as string;
+
+        // Convert the string to a Component object.
+        console.log(componentString);
+        const components = Components.fromJSON(
+          JSON.parse(componentString)
+        ).components;
+
         setComponents(components);
       });
   }, [checkedCategories, checkedAttributes]);
@@ -84,7 +96,7 @@ export default function GraphForm() {
       const hoverText: string[] = component.mpns.map((_, idx) => {
         return `
 MPN: <b>${component.mpns[idx]}</b><br>
-				Manufacturer: <b>${component.manufacturerNames[idx]}</b>`;
+				Manufacturer: <b>${component.manufacturers[idx]}</b>`;
       });
       const plotSettings: { [key: string]: any } = {
         x: component.axes?.[0]?.data,
@@ -117,16 +129,16 @@ MPN: <b>${component.mpns[idx]}</b><br>
     // get the attribute names from the checked attributes.
     //const checkedAttributeNames: string[] = checkedAttributes.map((id) => {
     //  return (
-    //    attributes.find((attribute) => {
+    //    ATTRIBUTES.find((attribute) => {
     //      return attribute.id === id;
     //    })?.name ?? "Undefined"
     //  );
     //});
 
-    const checkedAttributeNames: string[] = checkedAttributes.map((id) => {
+    const checkedAttributeNames: string[] = checkedAttributes.map((type) => {
       return (
-        columns.find((column) => {
-          return column.octopartId === id;
+        COLUMNS.find((column) => {
+          return column.column === type;
         })?.name ?? "Undefined"
       );
     });
@@ -134,21 +146,33 @@ MPN: <b>${component.mpns[idx]}</b><br>
     const layout: { [key: string]: any } = {
       autosize: true,
       xaxis: {
-        title: checkedAttributeNames[0] + ` [${components[0].axes[0]?.affix}]`,
+        title: checkedAttributeNames[0] + ` [${components[0].axes[0]?.unit}]`,
         type: "log",
         autorange: true,
-        ticksuffix: components[0].axes[0]?.suffix ?? "",
-        tickprefix: components[0].axes[0]?.prefix ?? "",
+        ticksuffix:
+          components[0].axes[0]?.affix === Affix.SUFFIX
+            ? components[0].axes[0]?.unit
+            : "",
+        tickprefix:
+          components[0].axes[0]?.affix === Affix.PREFIX
+            ? components[0].axes[0]?.unit
+            : "",
         mirror: true,
         ticks: "inside",
         showline: true,
       },
       yaxis: {
-        title: checkedAttributeNames[1] + ` [${components[0].axes[1]?.affix}]`,
+        title: checkedAttributeNames[1] + ` [${components[0].axes[1]?.unit}]`,
         type: "log",
         autorange: true,
-        ticksuffix: components[0].axes[1]?.suffix ?? "",
-        tickprefix: components[0].axes[1]?.prefix ?? "",
+        ticksuffix:
+          components[0].axes[1]?.affix === Affix.SUFFIX
+            ? components[0].axes[1]?.unit
+            : "",
+        tickprefix:
+          components[0].axes[1]?.affix === Affix.PREFIX
+            ? components[0].axes[1]?.unit
+            : "",
         mirror: true,
         ticks: "inside",
         showline: true,
@@ -176,7 +200,14 @@ MPN: <b>${component.mpns[idx]}</b><br>
         title: checkedAttributeNames[2],
         type: "log",
         autorange: true,
-        ticksuffix: components[0].axes[2]?.suffix ?? "",
+        ticksuffix:
+          components[0].axes[2]?.affix === Affix.SUFFIX
+            ? components[0].axes[2]?.unit
+            : "",
+        tickprefix:
+          components[0].axes[2]?.affix === Affix.PREFIX
+            ? components[0].axes[2]?.unit
+            : "",
       };
     }
     layout["title"] = checkedAttributeNames
@@ -198,55 +229,48 @@ MPN: <b>${component.mpns[idx]}</b><br>
           <div className="five columns">
             <label>Component List</label>
 
-            {columns
-              .filter((column) => {
-                return column.type === ColumnType.Category;
-              })
-              .map((category) => {
-                return (
-                  <>
-                    <input
-                      type="checkbox"
-                      key={category.column}
-                      name="category"
-                      value={category.name}
-                      onChange={(event) => {
-                        if (category.octopartId) {
-                          handleOnCategoryChanged(
-                            event,
-                            category.octopartId as string
-                          );
-                        }
-                      }}
-                    />
-                    <label>{category.name}</label>
-                  </>
-                );
-              })}
+            {COLUMNS.filter((column) => {
+              return column.type === ColumnType.Category;
+            }).map((category) => {
+              return (
+                <>
+                  <input
+                    type="checkbox"
+                    key={category.column}
+                    name="category"
+                    value={category.name}
+                    onChange={(event) => {
+                      if (category.octopartId) {
+                        handleOnCategoryChanged(event, category.octopartId);
+                      }
+                    }}
+                  />
+                  <label>{category.name}</label>
+                </>
+              );
+            })}
           </div>
           <div className="three columns">
             <label>Attribute List</label>
 
-            {columns
-              .filter((column) => {
-                return column.type === ColumnType.Attribute;
-              })
-              .map((attribute) => {
-                return (
-                  <>
-                    <input
-                      type="checkbox"
-                      key={attribute.column}
-                      name="attributes"
-                      value={attribute.name}
-                      onChange={(event) =>
-                        handleOnAttributeChanged(event, attribute.column)
-                      }
-                    />
-                    <label>{attribute.name}</label>
-                  </>
-                );
-              })}
+            {COLUMNS.filter((column) => {
+              return column.type === ColumnType.Attribute;
+            }).map((attribute) => {
+              return (
+                <>
+                  <input
+                    type="checkbox"
+                    key={attribute.column}
+                    name="attributes"
+                    value={attribute.name}
+                    onChange={(event) =>
+                      handleOnAttributeChanged(event, attribute.column)
+                    }
+                  />
+                  <label>{attribute.name}</label>
+                </>
+              );
+            })}
           </div>
           <div className="three columns">
             <Plot
