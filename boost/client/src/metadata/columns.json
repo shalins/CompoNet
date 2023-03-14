@@ -1,0 +1,314 @@
+{
+	"columns": [
+		{
+			"name": "Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 4166,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Inductors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 4190,
+			"included": false,
+			"computed": null
+		},
+		{
+			"name": "Aluminum Electrolytic Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 6331,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Ceramic Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 6332,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Class 1 Ceramic Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": -1,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Class 2 Ceramic Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": -2,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Film Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 6333,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "PP Film Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": -3,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "PET Film Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": -4,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Mica Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 6334,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Polymer Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 6335,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Tantalum Capacitors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 6336,
+			"included": true,
+			"computed": null
+		},
+		{
+			"name": "Variable Inductors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 4191,
+			"included": false,
+			"computed": null
+		},
+		{
+			"name": "Fixed Inductors",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 4193,
+			"included": false,
+			"computed": null
+		},
+		{
+			"name": "Transformers",
+			"column": "category",
+			"type": 0,
+			"unit": null,
+			"affix": null,
+			"id": 4194,
+			"included": false,
+			"computed": null
+		},
+		{
+			"name": "Dielectric",
+			"column": "dielectric",
+			"type": 1,
+			"unit": null,
+			"affix": 1,
+			"id": null,
+			"included": false,
+			"computed": false
+		},
+		{
+			"name": "Price",
+			"column": "price",
+			"type": 1,
+			"unit": "$",
+			"affix": 0,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "Capacitance",
+			"column": "capacitance",
+			"type": 1,
+			"unit": "F",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "Current",
+			"column": "current",
+			"type": 1,
+			"unit": "A",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "Voltage",
+			"column": "voltage",
+			"type": 1,
+			"unit": "V",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "Volume", 
+			"column": "volume",
+			"type": 1,
+			"unit": "mm^3",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": true
+		},
+		{
+			"name": "ESR",
+			"column": "esr",
+			"type": 1,
+			"unit": "Ω",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "ESR Frequency",
+			"column": "esr_frequency",
+			"type": 1,
+			"unit": "Hz",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "Mass",
+			"column": "mass",
+			"type": 1,
+			"unit": "g",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "Energy",
+			"column": "energy",
+			"type": 1,
+			"unit": "J",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "Power",
+			"column": "power",
+			"type": 1,
+			"unit": "W",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": false
+		},
+		{
+			"name": "Volumetric Energy Density",
+			"column": "volumetric_energy_density",
+			"type": 1,
+			"unit": "μJ/mm^3",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": true
+		},
+		{
+			"name": "Gravimetric Energy Density",
+			"column": "gravimetric_energy_density",
+			"type": 1,
+			"unit": "μJ/mg",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": true
+		},
+		{
+			"name": "Volumetric Power Density",
+			"column": "volumetric_power_density",
+			"type": 1,
+			"unit": "W/mm^3",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": true
+		},
+		{
+			"name": "Gravimetric Power Density",
+			"column": "gravimetric_power_density",
+			"type": 1,
+			"unit": "W/mg",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": true
+		},
+		{
+			"name": "Energy Per Cost", 
+			"column": "energy_per_cost",
+			"type": 1,
+			"unit": "μJ/$",
+			"affix": 1,
+			"id": null,
+			"included": true,
+			"computed": true
+		}
+	]
+}
