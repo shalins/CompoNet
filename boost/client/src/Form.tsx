@@ -13,10 +13,10 @@ export default function GraphForm() {
     X = "x",
     Y = "y",
   }
+
   const [components, setComponents] = useState<Component[]>();
 
   const [checkedCategories, setCheckedCategories] = useState<number[]>([]);
-  const [checkedAttributes, setCheckedAttributes] = useState<string[]>([]);
 
   const [xAxisAttribute, setXAxisAttribute] = useState<string>();
   const [yAxisAttribute, setYAxisAttribute] = useState<string>();
@@ -46,29 +46,13 @@ export default function GraphForm() {
     }
   };
 
-  const handleOnAttributeChanged = (
-    event: ChangeEvent<HTMLInputElement>,
-    id: string
-  ) => {
-    if (event.target.checked) {
-      setCheckedAttributes((oldCheckedAttributes: string[]) => [
-        ...oldCheckedAttributes,
-        id,
-      ]);
-    } else {
-      setCheckedAttributes(
-        checkedAttributes.filter((attribute) => attribute !== id)
-      );
-    }
-  };
-
   useEffect(() => {
     const searchParams = new URLSearchParams();
     if (checkedCategories.length < 1) {
       return;
     }
 
-    if (checkedAttributes.length < 2) {
+    if (!xAxisAttribute || !yAxisAttribute) {
       return;
     }
 
@@ -76,9 +60,10 @@ export default function GraphForm() {
       searchParams.append("categories", id as unknown as string);
     });
 
-    checkedAttributes.forEach((id) => {
-      searchParams.append("attributes", id as unknown as string);
-    });
+    if (xAxisAttribute && yAxisAttribute) {
+      searchParams.append("attributes", xAxisAttribute);
+      searchParams.append("attributes", yAxisAttribute);
+    }
 
     fetch("/api?" + searchParams.toString())
       .then((res) => {
@@ -141,27 +126,10 @@ MPN: <b>${component.mpns[idx]}</b><br>
   };
 
   const graphLayout = (components: Component[]) => {
-    // get the attribute names from the checked attributes.
-    //const checkedAttributeNames: string[] = checkedAttributes.map((id) => {
-    //  return (
-    //    ATTRIBUTES.find((attribute) => {
-    //      return attribute.id === id;
-    //    })?.name ?? "Undefined"
-    //  );
-    //});
-
-    const checkedAttributeNames: string[] = checkedAttributes.map((type) => {
-      return (
-        COLUMNS.find((column) => {
-          return column.column === type;
-        })?.name ?? "Undefined"
-      );
-    });
-
     const layout: { [key: string]: any } = {
       autosize: true,
       xaxis: {
-        title: checkedAttributeNames[0] + ` [${components[0].axes[0]?.unit}]`,
+        title: xAxisAttribute + ` [${components[0].axes[0]?.unit}]`,
         type: "log",
         autorange: true,
         ticksuffix:
@@ -177,7 +145,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
         showline: true,
       },
       yaxis: {
-        title: checkedAttributeNames[1] + ` [${components[0].axes[1]?.unit}]`,
+        title: yAxisAttribute + ` [${components[0].axes[1]?.unit}]`,
         type: "log",
         autorange: true,
         ticksuffix:
@@ -210,44 +178,9 @@ MPN: <b>${component.mpns[idx]}</b><br>
       },
     };
 
-    if (checkedAttributeNames.length > 2) {
-      layout["zaxis"] = {
-        title: checkedAttributeNames[2],
-        type: "log",
-        autorange: true,
-        ticksuffix:
-          components[0].axes[2]?.affix === Affix.SUFFIX
-            ? components[0].axes[2]?.unit
-            : "",
-        tickprefix:
-          components[0].axes[2]?.affix === Affix.PREFIX
-            ? components[0].axes[2]?.unit
-            : "",
-      };
-    }
-    layout["title"] = checkedAttributeNames
-      .map((name, i) => {
-        let title = name;
-        if (i !== checkedAttributeNames.length - 1) {
-          title += " vs ";
-        }
-        return title;
-      })
-      .join("");
+    layout["title"] = `${xAxisAttribute} vs ${yAxisAttribute}`;
     return layout;
   };
-
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  useEffect(() => {
-    const chevronIcon = document.querySelector(".chevron-icon");
-    if (chevronIcon) {
-      if (isDropdownOpen) {
-        chevronIcon.classList.add("rotate-180");
-      } else {
-        chevronIcon.classList.remove("rotate-180");
-      }
-    }
-  }, [isDropdownOpen]);
 
   return (
     <div className="grid grid-flow-row-dense grid-cols-12 h-screen">
@@ -256,7 +189,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
           <Dropdown
             defaultText={"Select X-Axis"}
             options={COLUMNS.filter((column) => {
-              return column.type === ColumnType.Category;
+              return column.type === ColumnType.Attribute;
             }).map((column) => column.name)}
             onSelect={(option) => {
               handleSelectedAttribute(option, Axis.X);
@@ -267,7 +200,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
           <Dropdown
             defaultText={"Select Y-Axis"}
             options={COLUMNS.filter((column) => {
-              return column.type === ColumnType.Category;
+              return column.type === ColumnType.Attribute;
             }).map((column) => column.name)}
             onSelect={(option) => {
               handleSelectedAttribute(option, Axis.Y);
