@@ -1,19 +1,34 @@
 import { ChangeEvent } from "react";
 import Plot from "react-plotly.js";
 import { useEffect, useState } from "react";
-//import { Component, parse } from "./parse";
-//import { ColumnType, columns } from "./utils/octopart";
 import { QueryParser } from "componet/componet";
 import { Components, Component } from "./proto/ts/componet.graph";
 import { ColumnType } from "./proto/ts/componet.metadata";
 import { Affix } from "./proto/ts/componet";
 import { COLUMNS, ATTRIBUTES, CATEGORIES } from "./utils/octopart";
+import Dropdown from "./Dropdown";
 
 export default function GraphForm() {
+  enum Axis {
+    X = "x",
+    Y = "y",
+  }
   const [components, setComponents] = useState<Component[]>();
 
   const [checkedCategories, setCheckedCategories] = useState<number[]>([]);
   const [checkedAttributes, setCheckedAttributes] = useState<string[]>([]);
+
+  const [xAxisAttribute, setXAxisAttribute] = useState<string>();
+  const [yAxisAttribute, setYAxisAttribute] = useState<string>();
+
+  const handleSelectedAttribute = (selectedAttribute: string, axis: Axis) => {
+    const name = COLUMNS.find(
+      (attribute) => attribute.name === selectedAttribute
+    )?.name;
+    if (name) {
+      axis === Axis.X ? setXAxisAttribute(name) : setYAxisAttribute(name);
+    }
+  };
 
   const handleOnCategoryChanged = (
     event: ChangeEvent<HTMLInputElement>,
@@ -83,7 +98,7 @@ export default function GraphForm() {
 
         setComponents(components);
       });
-  }, [checkedCategories, checkedAttributes]);
+  }, [checkedCategories, xAxisAttribute, yAxisAttribute]);
 
   useEffect(() => {
     console.log(components);
@@ -222,64 +237,76 @@ MPN: <b>${component.mpns[idx]}</b><br>
     return layout;
   };
 
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  useEffect(() => {
+    const chevronIcon = document.querySelector(".chevron-icon");
+    if (chevronIcon) {
+      if (isDropdownOpen) {
+        chevronIcon.classList.add("rotate-180");
+      } else {
+        chevronIcon.classList.remove("rotate-180");
+      }
+    }
+  }, [isDropdownOpen]);
+
   return (
-    <>
-      <form>
-        <div className="row">
-          <div className="five columns">
-            <label>Component List</label>
-
-            {COLUMNS.filter((column) => {
+    <div className="grid grid-flow-row-dense grid-cols-12 h-screen">
+      <div className="col-span-3 border-r-2 border-black pr-4">
+        <div className="px-8 pb-4 pt-2">
+          <Dropdown
+            defaultText={"Select X-Axis"}
+            options={COLUMNS.filter((column) => {
               return column.type === ColumnType.Category;
-            }).map((category) => {
-              return (
-                <>
-                  <input
-                    type="checkbox"
-                    key={category.column}
-                    name="category"
-                    value={category.name}
-                    onChange={(event) => {
-                      if (category.octopartId) {
-                        handleOnCategoryChanged(event, category.octopartId);
-                      }
-                    }}
-                  />
-                  <label>{category.name}</label>
-                </>
-              );
-            })}
-          </div>
-          <div className="three columns">
-            <label>Attribute List</label>
-
-            {COLUMNS.filter((column) => {
-              return column.type === ColumnType.Attribute;
-            }).map((attribute) => {
-              return (
-                <>
-                  <input
-                    type="checkbox"
-                    key={attribute.column}
-                    name="attributes"
-                    value={attribute.name}
-                    onChange={(event) =>
-                      handleOnAttributeChanged(event, attribute.column)
-                    }
-                  />
-                  <label>{attribute.name}</label>
-                </>
-              );
-            })}
-          </div>
-          <div className="three columns">
-            <Plot
-              data={components ? graphData(components) : []}
-              layout={components ? graphLayout(components) : {}}
-            />
-          </div>
+            }).map((column) => column.name)}
+            onSelect={(option) => {
+              handleSelectedAttribute(option, Axis.X);
+            }}
+          />
         </div>
-      </form>
-    </>
+        <div className="px-8 py-4">
+          <Dropdown
+            defaultText={"Select Y-Axis"}
+            options={COLUMNS.filter((column) => {
+              return column.type === ColumnType.Category;
+            }).map((column) => column.name)}
+            onSelect={(option) => {
+              handleSelectedAttribute(option, Axis.Y);
+            }}
+          />
+        </div>
+        <label>Component List</label>
+
+        <div className="flex flex-col">
+          {COLUMNS.filter((column) => {
+            return column.type === ColumnType.Category;
+          }).map((category) => {
+            return (
+              <div className="m-2">
+                <input
+                  type="checkbox"
+                  key={category.column}
+                  name="category"
+                  value={category.name}
+                  onChange={(event) => {
+                    if (category.octopartId) {
+                      handleOnCategoryChanged(event, category.octopartId);
+                    }
+                  }}
+                />
+                <label className="px-2">{category.name}</label>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="col-span-8">
+        <div className="flex justify-center">
+          <Plot
+            data={components ? graphData(components) : []}
+            layout={components ? graphLayout(components) : {}}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
