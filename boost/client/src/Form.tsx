@@ -1,7 +1,6 @@
 import { ChangeEvent } from "react";
 import plotComponentFactory from "react-plotly.js/factory";
 import Plotly from "plotly.js/dist/plotly";
-import createPlotlyComponent from "react-plotly.js/factory";
 
 import { useEffect, useState } from "react";
 import { QueryParser } from "componet/componet";
@@ -10,24 +9,29 @@ import { ColumnType } from "./proto/ts/componet.metadata";
 import { Affix } from "./proto/ts/componet";
 import { COLUMNS } from "./utils/octopart";
 import Dropdown from "./Dropdown";
-import Trace from "./Trace";
+import PlotTrace from "./Trace";
+import { Trace, Axis } from "./utils/types";
 
 export default function GraphForm() {
-  enum Axis {
-    X = "x",
-    Y = "y",
-  }
-
   // Selection Parameters
   const [xAxisAttribute, setXAxisAttribute] = useState<string>();
   const [yAxisAttribute, setYAxisAttribute] = useState<string>();
-  const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
+  const [selectedComponent, setSelectedComponent] = useState<string>();
+  const [selectedYear, setSelectedYear] = useState<string>();
+
+  // Data that corresponds to user selections for the plot
+  const [plotTraces, setPlotTraces] = useState<Trace[]>([]);
   const [plotComponent, setPlotComponent] = useState<any[]>([]);
 
+  // Actual plot data
   const [plotData, setPlotData] = useState<any[]>([]);
   const [plotLayout, setPlotLayout] = useState<{ [key: string]: any }>({});
 
-  const [revision, setRevision] = useState<number>(0);
+  // Raw data from the database
+  const [components, setComponents] = useState<Component[]>();
+
+  // Loading data from the database
+  const [loading, setLoading] = useState<boolean>(false);
 
   const traceColors = [
     "#1f77b4",
@@ -42,9 +46,6 @@ export default function GraphForm() {
     "#17becf",
   ];
 
-  // Returned Parameters
-  const [components, setComponents] = useState<Component[]>();
-
   const handleSelectedAttribute = (selectedAttribute: string, axis: Axis) => {
     const name = COLUMNS.find(
       (attribute) => attribute.name === selectedAttribute
@@ -54,15 +55,7 @@ export default function GraphForm() {
     }
   };
 
-  const handleSelectedCategory = (component: string) => {
-    setSelectedComponents([...selectedComponents, component]);
-  };
-
-  const handleRemoveCategory = (component: string) => {
-    setSelectedComponents((prev) => prev.filter((c) => c !== component));
-  };
-
-  const onPlotClicked = (event: any) => {
+  const onPlotSelectPoint = (event: any) => {
     console.log(event);
     setPlotComponent((prev) => {
       return [...prev, event.points[0]];
@@ -77,13 +70,10 @@ export default function GraphForm() {
     plotData[event.points[0].fullData.index].marker.symbol[
       event.points[0].pointIndex
     ] = "x";
-
-    setRevision((revision) => revision + 1);
   };
 
-  const onPlotDelete = (component: any, i: number) => {
+  const onPlotDeselectPoint = (component: any, i: number) => {
     setPlotComponent((prev) => {
-      //plotData[prev.
       plotData[component.fullData.index].marker.color[component.pointIndex] =
         traceColors[component.fullData.index];
       plotData[component.fullData.index].marker.size[component.pointIndex] =
@@ -92,6 +82,34 @@ export default function GraphForm() {
         "circle";
       return prev.filter((_, index) => index !== i);
     });
+  };
+
+  const addToPlot = () => {
+    if (
+      !xAxisAttribute ||
+      !yAxisAttribute ||
+      !selectedComponent ||
+      !selectedYear
+    ) {
+      return;
+    }
+
+    // Create a Trace from the different selections
+    const trace: Trace = {
+      title: selectedComponent,
+      color: traceColors[plotTraces.length],
+      year: selectedYear,
+    };
+    console.log(trace);
+
+    setPlotTraces((prev) => [...prev, trace]);
+  };
+
+  const removeFromPlot = (trace: Trace) => {
+    setPlotTraces((prev) => prev.filter((t) => t !== trace));
+
+    // Reset the dropdown
+    setSelectedComponent("Select Component");
   };
 
   // Check if the return data is valid
@@ -107,64 +125,58 @@ export default function GraphForm() {
     div: "graph",
     data: plotData,
     layout: plotLayout,
-    onClick: onPlotClicked,
+    onClick: onPlotSelectPoint,
     useResizeHandler: true,
   };
-  const getPlot = () => {
-    return plotComponentFactory(Plotly);
-  };
-  const Plot = getPlot();
+  const Plot = plotComponentFactory(Plotly);
 
-  const computePlot = () => {
-    const searchParams = new URLSearchParams();
-    if (selectedComponents.length < 1) {
-      return;
-    }
+  useEffect(() => {
+    const computePlot = () => {
+      const searchParams = new URLSearchParams();
 
-    if (!xAxisAttribute || !yAxisAttribute) {
-      return;
-    }
-
-    selectedComponents.forEach((component) => {
-      const id = COLUMNS.find((c) => c.name === component)?.octopartId;
-      if (id) {
-        searchParams.append("categories", id as unknown as string);
-      } else {
-        console.warn("Could not find octopart id for component: ", component);
-      }
-    });
-
-    if (xAxisAttribute && yAxisAttribute) {
-      searchParams.append("attributes", xAxisAttribute);
-      searchParams.append("attributes", yAxisAttribute);
-    }
-
-    fetch("/api?" + searchParams.toString())
-      .then((res) => {
-        console.log(res);
-        return res.json();
-      })
-      .then((data) => {
-        const componentString = QueryParser.parse(
-          JSON.stringify(data)
-        ) as unknown as string;
-
-        // Convert the string to a Component object.
-        if (!isEmpty(JSON.parse(componentString))) {
-          const components = Components.fromJSON(
-            JSON.parse(componentString)
-          ).components;
-
-          setComponents(components);
-          graphData(components);
-          graphLayout(components);
-          setRevision(0);
-          setPlotComponent([]);
+      plotTraces.forEach((component) => {
+        console.warn("Found octopart id for component: ", component);
+        const id = COLUMNS.find((c) => c.name === component.title)?.octopartId;
+        if (id) {
+          searchParams.append("categories", id as unknown as string);
         } else {
-          console.warn("No components in the response");
+          console.warn("Could not find octopart id for component: ", component);
         }
       });
-  };
+
+      if (xAxisAttribute && yAxisAttribute) {
+        searchParams.append("attributes", xAxisAttribute);
+        searchParams.append("attributes", yAxisAttribute);
+      }
+
+      fetch("/api?" + searchParams.toString())
+        .then((res) => {
+          console.log(res);
+          return res.json();
+        })
+        .then((data) => {
+          const componentString = QueryParser.parse(
+            JSON.stringify(data)
+          ) as unknown as string;
+
+          // Convert the string to a Component object.
+          if (!isEmpty(JSON.parse(componentString))) {
+            const components = Components.fromJSON(
+              JSON.parse(componentString)
+            ).components;
+
+            setComponents(components);
+            graphData(components);
+            graphLayout(components);
+            setPlotComponent([]);
+          } else {
+            console.warn("No components in the response");
+          }
+        });
+    };
+
+    computePlot();
+  }, [plotTraces]);
 
   useEffect(() => {
     console.log(components);
@@ -303,28 +315,33 @@ MPN: <b>${component.mpns[idx]}</b><br>
               options={COLUMNS.filter((column) => {
                 return column.type === ColumnType.Category;
               }).map((column) => column.name)}
-              onSelect={(option) => {
-                handleSelectedCategory(option);
-              }}
+              onSelect={setSelectedComponent}
             />
           </div>
           <div className="col-span-1 px-2">
             <Dropdown
               defaultText={"Select Year"}
               options={["2022"]}
-              onSelect={(option) => {
-                handleSelectedAttribute(option, Axis.X);
-              }}
+              onSelect={setSelectedYear}
             />
           </div>
           <div className="col-span-1 px-2">
             <button
               className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-4 px-4"
-              onClick={computePlot}
+              onClick={addToPlot}
             >
               Add to Plot
             </button>
           </div>
+        </div>
+        <div className="flex flex-nowrap pt-5 px-6">
+          {plotTraces.map((trace) => {
+            return (
+              <div className="px-2">
+                <PlotTrace trace={trace} onRemove={removeFromPlot} />
+              </div>
+            );
+          })}
         </div>
         <div className="flex justify-center">
           <Plot {...graphProps} className="w-9/12" />
@@ -361,7 +378,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
                     verticalAlign: "middle",
                   }}
                   type="button"
-                  onClick={() => onPlotDelete(component, i)}
+                  onClick={() => onPlotDeselectPoint(component, i)}
                 >
                   Delete
                 </button>
@@ -373,22 +390,3 @@ MPN: <b>${component.mpns[idx]}</b><br>
     </div>
   );
 }
-// <div className="flex flex-nowrap pt-5 px-6">
-// 		{selectedComponents.forEach((component) => {
-// 			return (
-// 				<div className="px-2">
-// 					<Trace
-// 						title={component}
-// 						color="#003262"
-// 						onRemove={(option) => {
-// 							handleRemoveCategory(option);
-// 							computePlot();
-// 						}}
-// 					/>
-// 				</div>
-// 			)
-// 		}};
-//   <div className="px-2">
-//     <Trace title="C1 Ceramic" color="#FDB515" onRemove={() => {}} />
-//   </div>
-// </div>
