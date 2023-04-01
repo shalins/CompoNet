@@ -16,7 +16,9 @@ message DatabaseMetadata {
 	ColumnType type = 3;
 	optional string unit = 4;
 	optional Affix affix = 5;
-	optional int64 octopart_id = 6;
+	optional int64 id = 6;
+	bool included = 7;
+	optional bool computed = 8;
 }
 
 message OctopartMetadata {

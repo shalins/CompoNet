@@ -6,3 +6,4 @@ enum Affix {
 	PREFIX = 0;
 	SUFFIX = 1;
 }
+

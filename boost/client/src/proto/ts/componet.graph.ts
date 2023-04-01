@@ -5,13 +5,16 @@ import { Affix, affixFromJSON, affixToJSON } from "./componet";
 export const protobufPackage = "componet.graph";
 
 export interface Axis {
+  name: string;
+  shortname: string;
   data: number[];
   affix?: Affix | undefined;
   unit?: string | undefined;
+  computed: boolean;
 }
 
 export interface Component {
-  category: string;
+  name: string;
   axes: Axis[];
   mpns: string[];
   manufacturers: string[];
@@ -22,21 +25,30 @@ export interface Components {
 }
 
 function createBaseAxis(): Axis {
-  return { data: [], affix: undefined, unit: undefined };
+  return { name: "", shortname: "", data: [], affix: undefined, unit: undefined, computed: false };
 }
 
 export const Axis = {
   encode(message: Axis, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    writer.uint32(10).fork();
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.shortname !== "") {
+      writer.uint32(18).string(message.shortname);
+    }
+    writer.uint32(26).fork();
     for (const v of message.data) {
       writer.double(v);
     }
     writer.ldelim();
     if (message.affix !== undefined) {
-      writer.uint32(16).int32(message.affix);
+      writer.uint32(32).int32(message.affix);
     }
     if (message.unit !== undefined) {
-      writer.uint32(26).string(message.unit);
+      writer.uint32(42).string(message.unit);
+    }
+    if (message.computed === true) {
+      writer.uint32(48).bool(message.computed);
     }
     return writer;
   },
@@ -49,6 +61,12 @@ export const Axis = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.shortname = reader.string();
+          break;
+        case 3:
           if ((tag & 7) === 2) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
@@ -58,11 +76,14 @@ export const Axis = {
             message.data.push(reader.double());
           }
           break;
-        case 2:
+        case 4:
           message.affix = reader.int32() as any;
           break;
-        case 3:
+        case 5:
           message.unit = reader.string();
+          break;
+        case 6:
+          message.computed = reader.bool();
           break;
         default:
           reader.skipType(tag & 7);
@@ -74,14 +95,19 @@ export const Axis = {
 
   fromJSON(object: any): Axis {
     return {
+      name: isSet(object.name) ? String(object.name) : "",
+      shortname: isSet(object.shortname) ? String(object.shortname) : "",
       data: Array.isArray(object?.data) ? object.data.map((e: any) => Number(e)) : [],
       affix: isSet(object.affix) ? affixFromJSON(object.affix) : undefined,
       unit: isSet(object.unit) ? String(object.unit) : undefined,
+      computed: isSet(object.computed) ? Boolean(object.computed) : false,
     };
   },
 
   toJSON(message: Axis): unknown {
     const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.shortname !== undefined && (obj.shortname = message.shortname);
     if (message.data) {
       obj.data = message.data.map((e) => e);
     } else {
@@ -89,6 +115,7 @@ export const Axis = {
     }
     message.affix !== undefined && (obj.affix = message.affix !== undefined ? affixToJSON(message.affix) : undefined);
     message.unit !== undefined && (obj.unit = message.unit);
+    message.computed !== undefined && (obj.computed = message.computed);
     return obj;
   },
 
@@ -98,21 +125,24 @@ export const Axis = {
 
   fromPartial<I extends Exact<DeepPartial<Axis>, I>>(object: I): Axis {
     const message = createBaseAxis();
+    message.name = object.name ?? "";
+    message.shortname = object.shortname ?? "";
     message.data = object.data?.map((e) => e) || [];
     message.affix = object.affix ?? undefined;
     message.unit = object.unit ?? undefined;
+    message.computed = object.computed ?? false;
     return message;
   },
 };
 
 function createBaseComponent(): Component {
-  return { category: "", axes: [], mpns: [], manufacturers: [] };
+  return { name: "", axes: [], mpns: [], manufacturers: [] };
 }
 
 export const Component = {
   encode(message: Component, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.category !== "") {
-      writer.uint32(10).string(message.category);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     for (const v of message.axes) {
       Axis.encode(v!, writer.uint32(18).fork()).ldelim();
@@ -134,7 +164,7 @@ export const Component = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.category = reader.string();
+          message.name = reader.string();
           break;
         case 2:
           message.axes.push(Axis.decode(reader, reader.uint32()));
@@ -155,7 +185,7 @@ export const Component = {
 
   fromJSON(object: any): Component {
     return {
-      category: isSet(object.category) ? String(object.category) : "",
+      name: isSet(object.name) ? String(object.name) : "",
       axes: Array.isArray(object?.axes) ? object.axes.map((e: any) => Axis.fromJSON(e)) : [],
       mpns: Array.isArray(object?.mpns) ? object.mpns.map((e: any) => String(e)) : [],
       manufacturers: Array.isArray(object?.manufacturers) ? object.manufacturers.map((e: any) => String(e)) : [],
@@ -164,7 +194,7 @@ export const Component = {
 
   toJSON(message: Component): unknown {
     const obj: any = {};
-    message.category !== undefined && (obj.category = message.category);
+    message.name !== undefined && (obj.name = message.name);
     if (message.axes) {
       obj.axes = message.axes.map((e) => e ? Axis.toJSON(e) : undefined);
     } else {
@@ -189,7 +219,7 @@ export const Component = {
 
   fromPartial<I extends Exact<DeepPartial<Component>, I>>(object: I): Component {
     const message = createBaseComponent();
-    message.category = object.category ?? "";
+    message.name = object.name ?? "";
     message.axes = object.axes?.map((e) => Axis.fromPartial(e)) || [];
     message.mpns = object.mpns?.map((e) => e) || [];
     message.manufacturers = object.manufacturers?.map((e) => e) || [];

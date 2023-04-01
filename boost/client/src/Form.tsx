@@ -131,54 +131,6 @@ export default function GraphForm() {
   const Plot = plotComponentFactory(Plotly);
 
   useEffect(() => {
-    const computePlot = () => {
-      const searchParams = new URLSearchParams();
-
-      plotTraces.forEach((component) => {
-        console.warn("Found octopart id for component: ", component);
-        const id = COLUMNS.find((c) => c.name === component.title)?.octopartId;
-        if (id) {
-          searchParams.append("categories", id as unknown as string);
-        } else {
-          console.warn("Could not find octopart id for component: ", component);
-        }
-      });
-
-      if (xAxisAttribute && yAxisAttribute) {
-        searchParams.append("attributes", xAxisAttribute);
-        searchParams.append("attributes", yAxisAttribute);
-      }
-
-      fetch("/api?" + searchParams.toString())
-        .then((res) => {
-          console.log(res);
-          return res.json();
-        })
-        .then((data) => {
-          const componentString = QueryParser.parse(
-            JSON.stringify(data)
-          ) as unknown as string;
-
-          // Convert the string to a Component object.
-          if (!isEmpty(JSON.parse(componentString))) {
-            const components = Components.fromJSON(
-              JSON.parse(componentString)
-            ).components;
-
-            setComponents(components);
-            graphData(components);
-            graphLayout(components);
-            setPlotComponent([]);
-          } else {
-            console.warn("No components in the response");
-          }
-        });
-    };
-
-    computePlot();
-  }, [plotTraces]);
-
-  useEffect(() => {
     console.log(components);
   }, [components]);
 
@@ -202,7 +154,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
 			%{xaxis.title.text}: %{x} <br>
 			<extra></extra>
 		`,
-        name: component.category
+        name: component.name
           .replace(" Capacitors", "")
           .replace(" Inductors", ""),
         type: "scattergl",
@@ -280,6 +232,66 @@ MPN: <b>${component.mpns[idx]}</b><br>
     setPlotLayout(layout);
     return layout;
   };
+
+  useEffect(() => {
+    const computePlot = () => {
+      if (!xAxisAttribute || !yAxisAttribute || !graphData || !graphLayout) {
+        return;
+      }
+
+      const searchParams = new URLSearchParams();
+
+      plotTraces.forEach((component) => {
+        console.warn("Found octopart id for component: ", component);
+        const id = COLUMNS.find((c) => c.name === component.title)?.id;
+        if (id) {
+          searchParams.append("categories", id as unknown as string);
+        } else {
+          console.warn("Could not find octopart id for component: ", component);
+        }
+      });
+
+      if (xAxisAttribute && yAxisAttribute) {
+        searchParams.append(
+          "attributes",
+          COLUMNS.find((c) => c.name === xAxisAttribute)
+            ?.column as unknown as string
+        );
+        searchParams.append(
+          "attributes",
+          COLUMNS.find((c) => c.name === yAxisAttribute)
+            ?.column as unknown as string
+        );
+      }
+
+      fetch("/api?" + searchParams.toString())
+        .then((res) => {
+          console.log(res);
+          return res.json();
+        })
+        .then((data) => {
+          const componentString = QueryParser.parse(
+            JSON.stringify(data)
+          ) as unknown as string;
+
+          // Convert the string to a Component object.
+          if (!isEmpty(JSON.parse(componentString))) {
+            const components = Components.fromJSON(
+              JSON.parse(componentString)
+            ).components;
+
+            setComponents(components);
+            graphData(components);
+            graphLayout(components);
+            setPlotComponent([]);
+          } else {
+            console.warn("No components in the response");
+          }
+        });
+    };
+
+    computePlot();
+  }, [plotTraces]);
 
   return (
     <div className="grid grid-flow-col h-screen">

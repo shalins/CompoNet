@@ -2,7 +2,7 @@ import re
 
 import numpy as np
 import pandas as pd
-from categories import categories_cache, ceramic_class, dielectric_power_fit, column_map
+from categories import categories_cache, ceramic_class, column_map, dielectric_power_fit
 
 
 def _convert_to_float(entry: str):
@@ -151,6 +151,7 @@ def classify_dielectric(df: pd.DataFrame) -> pd.DataFrame:
     Goes through the various dielectric columns and converts them to a single
     column that's most likely to be the correct dielectric.
     """
+
     # For ceramic capacitors, the dielectric is the ceramic class. For aluminum
     # electric, mica, and tantlum capacitors, the dielectric is the dielectric type,
     # for example, "aluminum" or "mica". For film capacitors, we use the tables from
@@ -267,7 +268,7 @@ def process_esr(df: pd.DataFrame) -> pd.DataFrame:
 def process_esr_frequency(df: pd.DataFrame) -> pd.DataFrame:
     """
     Goes through the various ESR frequency columns and converts them to a single
-    column that's most likely to be the correct ESR frequency. We also split the 
+    column that's most likely to be the correct ESR frequency. We also split the
     frequency into low (50, 60, 100, or 120 Hz) and high (switching) (>=10 kHz).
     """
     df[column_map["esr_frequency"]] = df["part_specs_testfrequency_display_value"]

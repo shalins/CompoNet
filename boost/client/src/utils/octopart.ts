@@ -1,6 +1,6 @@
-import columns from "../json/columns.json";
-import categories from "../json/categories.json";
-import attributes from "../json/attributes.json";
+import columns from "../metadata/columns.json";
+import categories from "../metadata/categories.json";
+import attributes from "../metadata/attributes.json";
 
 import {
   DatabaseMetadata,
@@ -31,18 +31,7 @@ import {
 //  octopartId?: number | string | null;
 //}
 
-export const COLUMNS: DatabaseMetadata[] = Columns.fromJSON(
-  columns
-).columns.map((column) => {
-  return {
-    name: column.name,
-    column: column.column,
-    type: column.type,
-    unit: column.unit,
-    affix: column.affix,
-    octopartId: column.octopartId,
-  };
-});
+export const COLUMNS: DatabaseMetadata[] = Columns.fromJSON(columns).columns;
 export const CATEGORIES: OctopartMetadata[] =
   Categories.fromJSON(categories).categories;
 export const ATTRIBUTES: OctopartMetadata[] =

@@ -50,7 +50,9 @@ export interface DatabaseMetadata {
   type: ColumnType;
   unit?: string | undefined;
   affix?: Affix | undefined;
-  octopartId?: number | undefined;
+  id?: number | undefined;
+  included: boolean;
+  computed?: boolean | undefined;
 }
 
 export interface OctopartMetadata {
@@ -73,7 +75,16 @@ export interface Attributes {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", column: "", type: 0, unit: undefined, affix: undefined, octopartId: undefined };
+  return {
+    name: "",
+    column: "",
+    type: 0,
+    unit: undefined,
+    affix: undefined,
+    id: undefined,
+    included: false,
+    computed: undefined,
+  };
 }
 
 export const DatabaseMetadata = {
@@ -93,8 +104,14 @@ export const DatabaseMetadata = {
     if (message.affix !== undefined) {
       writer.uint32(40).int32(message.affix);
     }
-    if (message.octopartId !== undefined) {
-      writer.uint32(48).int64(message.octopartId);
+    if (message.id !== undefined) {
+      writer.uint32(48).int64(message.id);
+    }
+    if (message.included === true) {
+      writer.uint32(56).bool(message.included);
+    }
+    if (message.computed !== undefined) {
+      writer.uint32(64).bool(message.computed);
     }
     return writer;
   },
@@ -122,7 +139,13 @@ export const DatabaseMetadata = {
           message.affix = reader.int32() as any;
           break;
         case 6:
-          message.octopartId = longToNumber(reader.int64() as Long);
+          message.id = longToNumber(reader.int64() as Long);
+          break;
+        case 7:
+          message.included = reader.bool();
+          break;
+        case 8:
+          message.computed = reader.bool();
           break;
         default:
           reader.skipType(tag & 7);
@@ -139,7 +162,9 @@ export const DatabaseMetadata = {
       type: isSet(object.type) ? columnTypeFromJSON(object.type) : 0,
       unit: isSet(object.unit) ? String(object.unit) : undefined,
       affix: isSet(object.affix) ? affixFromJSON(object.affix) : undefined,
-      octopartId: isSet(object.octopartId) ? Number(object.octopartId) : undefined,
+      id: isSet(object.id) ? Number(object.id) : undefined,
+      included: isSet(object.included) ? Boolean(object.included) : false,
+      computed: isSet(object.computed) ? Boolean(object.computed) : undefined,
     };
   },
 
@@ -150,7 +175,9 @@ export const DatabaseMetadata = {
     message.type !== undefined && (obj.type = columnTypeToJSON(message.type));
     message.unit !== undefined && (obj.unit = message.unit);
     message.affix !== undefined && (obj.affix = message.affix !== undefined ? affixToJSON(message.affix) : undefined);
-    message.octopartId !== undefined && (obj.octopartId = Math.round(message.octopartId));
+    message.id !== undefined && (obj.id = Math.round(message.id));
+    message.included !== undefined && (obj.included = message.included);
+    message.computed !== undefined && (obj.computed = message.computed);
     return obj;
   },
 
@@ -165,7 +192,9 @@ export const DatabaseMetadata = {
     message.type = object.type ?? 0;
     message.unit = object.unit ?? undefined;
     message.affix = object.affix ?? undefined;
-    message.octopartId = object.octopartId ?? undefined;
+    message.id = object.id ?? undefined;
+    message.included = object.included ?? false;
+    message.computed = object.computed ?? undefined;
     return message;
   },
 };

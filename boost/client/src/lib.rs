@@ -4,6 +4,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::{from_str, Value};
 use wasm_bindgen::prelude::*;
 use web_sys::console;
+extern crate console_error_panic_hook;
 
 pub mod componet {
     use super::*;
@@ -34,11 +35,13 @@ pub mod componet {
     where
         D: Deserializer<'de>,
     {
+        use componet::metadata::ColumnType;
         let s: i32 = Deserialize::deserialize(deserializer)?;
+
         match s {
-            0 => Ok(componet::metadata::ColumnType::Category as i32),
-            1 => Ok(componet::metadata::ColumnType::Attribute as i32),
-            2 => Ok(componet::metadata::ColumnType::Other as i32),
+            0 => Ok(ColumnType::Category as i32),
+            1 => Ok(ColumnType::Attribute as i32),
+            2 => Ok(ColumnType::Other as i32),
             _ => Err(serde::de::Error::custom("invalid column type")),
         }
     }
@@ -49,19 +52,19 @@ lazy_static! {
     #[wasm_bindgen]
     #[derive(Debug)]
     pub static ref COLUMNS: Vec<metadata::DatabaseMetadata> = {
-        let data: metadata::Columns = serde_json::from_str(include_str!("./json/columns.json")).expect("Failed to deserialize JSON");
+        let data: metadata::Columns = serde_json::from_str(include_str!("./metadata/columns.json")).expect("Failed to deserialize JSON");
         data.columns
     };
     #[wasm_bindgen]
     #[derive(Debug)]
     pub static ref CATEGORIES: Vec<metadata::OctopartMetadata> = {
-        let data: metadata::Categories = serde_json::from_str(include_str!("./json/categories.json")).expect("Failed to deserialize JSON");
+        let data: metadata::Categories = serde_json::from_str(include_str!("./metadata/categories.json")).expect("Failed to deserialize JSON");
         data.categories
     };
     #[wasm_bindgen]
     #[derive(Debug)]
     pub static ref ATTRIBUTES: Vec<metadata::OctopartMetadata> = {
-        let data: metadata::Attributes = serde_json::from_str(include_str!("./json/attributes.json")).expect("Failed to deserialize JSON");
+        let data: metadata::Attributes = serde_json::from_str(include_str!("./metadata/attributes.json")).expect("Failed to deserialize JSON");
         data.attributes
     };
 }
@@ -76,8 +79,30 @@ pub struct QueryGenerator;
 
 #[wasm_bindgen]
 impl QueryGenerator {
+    fn interpret_category(category: &str) -> String {
+        if category == "4166" {
+            return "category=6331 OR \
+                category=6332 OR \
+                category=6333 OR \
+                category=6334"
+                // TODO(SHALIN): Add these once we collect data for them.
+                //category=6335 OR
+                //category=6336"
+                .to_string();
+        } else if category == "-1" {
+            return "category=6332 AND dielectric='C1'".to_string();
+        } else if category == "-2" {
+            return "category=6332 AND dielectric='C2'".to_string();
+        } else if category == "-3" {
+            return "category=6333 AND dielectric='PP'".to_string();
+        } else if category == "-4" {
+            return "category=6333 AND dielectric='PET'".to_string();
+        } else {
+            return format!("category={}", category);
+        }
+    }
+
     pub fn generate(category: &str, attributes: Array) -> String {
-        //console::log_1(&JsValue::from_str(&format!("{:?}", *ATTRIBUTES)));
         let attributes = attributes
             .iter()
             .map(|s| s.as_string().unwrap_or_default())
@@ -96,10 +121,20 @@ impl QueryGenerator {
                 query_end = format!("{}{}", query_end, " AND ");
             }
         });
+
+        // Some of the categories are custom and not from Octopart so we need to
+        // interpret them differently.
+
         query = format!(
             "{}{}{}{}{}{}",
-            query, " FROM public.final WHERE category=", category, " AND ", query_end, ";"
+            query,
+            " FROM public.final WHERE (",
+            Self::interpret_category(category),
+            ") AND (",
+            query_end,
+            ");"
         );
+        console::log_1(&JsValue::from_str(&format!("{:?}", query)));
         return query;
     }
 }
@@ -134,8 +169,21 @@ impl QueryParser {
         let mut output = componet::graph::Components {
             components: Vec::new(),
         };
+
+        // If the result is empty, we return an empty string.
+        if result
+            .values()
+            .next()
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .is_empty()
+        {
+            return "{}".to_string();
+        }
+
         // Get the list of all attributes form the results.
-        let attribute_names = result
+        let attribute_shortnames = result
             .values()
             .next()
             .unwrap()
@@ -151,12 +199,17 @@ impl QueryParser {
 
         // Go through each category and parse the data.
         for (category_id, category_data) in result.iter() {
-            // Get category name from category ID using the CATEGORIES vector.
-            let category_name = &CATEGORIES
+            console::log_1(&JsValue::from_str(&format!(
+                "Parsing category {}",
+                category_id
+            )));
+            // Get category name from category ID using the COLUMNS vector.
+            let category_name = &COLUMNS
                 .iter()
-                .find(|c| c.id.to_string() == *category_id)
+                .find(|c| c.id.unwrap_or_default().to_string() == *category_id)
                 .unwrap()
                 .name;
+
             let mut axes: Vec<componet::graph::Axis> = Vec::new();
 
             let mpns = category_data
@@ -190,12 +243,12 @@ impl QueryParser {
                 .collect::<Vec<String>>();
 
             // Go through each attribute and parse the data.
-            attribute_names.iter().for_each(|attr_name| {
+            attribute_shortnames.iter().for_each(|attr_shortname| {
                 // Grab all data where the name of the attribute matches
                 // the name of the attribute we are currently looking at.
                 console::log_1(&JsValue::from_str(&format!(
                     "Looking at attribute: {}",
-                    attr_name
+                    attr_shortname
                 )));
                 let data = category_data
                     .as_array()
@@ -204,31 +257,55 @@ impl QueryParser {
                     .map(|d| {
                         d.as_object()
                             .unwrap()
-                            .get(*attr_name)
+                            .get(*attr_shortname)
                             .unwrap()
                             .as_f64()
                             .unwrap()
                     })
                     .collect::<Vec<f64>>();
 
-                let componet::metadata::DatabaseMetadata { affix, unit, .. } =
-                    COLUMNS.iter().find(|a| a.column == **attr_name).unwrap();
+                let componet::metadata::DatabaseMetadata {
+                    affix,
+                    unit,
+                    computed,
+                    ..
+                } = COLUMNS
+                    .iter()
+                    .find(|a| a.column == **attr_shortname)
+                    .unwrap();
 
+                // Get attribute name from shortname using the COLUMNS vector.
+                let attr_name = &COLUMNS
+                    .iter()
+                    .find(|a| a.column == **attr_shortname)
+                    .expect("Couldnot find attribute from the given shortname")
+                    .name;
                 let axis = componet::graph::Axis {
+                    name: attr_name.to_string(),
+                    shortname: attr_shortname.to_string(),
                     data,
                     affix: affix.clone(),
                     unit: unit.clone(),
+                    computed: computed.unwrap_or(true),
                 };
                 axes.push(axis);
+                console::log_1(&JsValue::from_str(&format!(
+                    "Finished looking at attribute: {}",
+                    attr_name
+                )));
             });
 
             let component = componet::graph::Component {
-                category: category_name.to_string(),
+                name: category_name.to_string(),
                 mpns,
                 manufacturers,
                 axes,
             };
             output.components.push(component);
+            console::log_1(&JsValue::from_str(&format!(
+                "Finished parsing category {}",
+                category_name
+            )));
         }
         serde_json::to_string(&output).unwrap()
     }
