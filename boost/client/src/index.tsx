@@ -10,7 +10,9 @@ init("componet_bg.wasm").then(() => {
   );
   root.render(
     <React.StrictMode>
-      <App />
+      <div className="max-w-screen max-h-screen">
+        <App />
+      </div>
     </React.StrictMode>
   );
 });
