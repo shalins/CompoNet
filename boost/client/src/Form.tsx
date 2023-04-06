@@ -10,7 +10,8 @@ import { Affix } from "./proto/ts/componet";
 import { COLUMNS } from "./utils/octopart";
 import Dropdown from "./Dropdown";
 import PlotTrace from "./Trace";
-import { Trace, Axis } from "./utils/types";
+import PlotPoint from "./Point";
+import { Trace, Point, Axis } from "./utils/types";
 
 export default function GraphForm() {
   // Selection Parameters
@@ -21,7 +22,7 @@ export default function GraphForm() {
 
   // Data that corresponds to user selections for the plot
   const [plotTraces, setPlotTraces] = useState<Trace[]>([]);
-  const [plotComponent, setPlotComponent] = useState<any[]>([]);
+  const [plotComponent, setPlotComponent] = useState<Point[]>([]);
 
   // Actual plot data
   const [plotData, setPlotData] = useState<any[]>([]);
@@ -57,29 +58,32 @@ export default function GraphForm() {
 
   const onPlotSelectPoint = (event: any) => {
     console.log(event);
-    setPlotComponent((prev) => {
-      return [...prev, event.points[0]];
-    });
 
-    plotData[event.points[0].fullData.index].marker.color[
-      event.points[0].pointIndex
-    ] = "black";
-    plotData[event.points[0].fullData.index].marker.size[
-      event.points[0].pointIndex
-    ] = "10";
-    plotData[event.points[0].fullData.index].marker.symbol[
-      event.points[0].pointIndex
-    ] = "x";
+    const fullDataIdx = event.points[0].fullData.index;
+    const ptIdx = event.points[0].pointIndex;
+    // get mpn from components array
+    const mpn = components?.[fullDataIdx].mpns[ptIdx];
+    const manufacturer = components?.[fullDataIdx].manufacturers[ptIdx];
+    const point: Point = {
+      ptIdx,
+      fullDataIdx,
+      mpn: mpn ?? "",
+      color: plotData[fullDataIdx].marker.color[ptIdx],
+      manufacturer: manufacturer ?? "",
+      link: `https://octopart.com/search?q=${mpn}&view=list`,
+    };
+    setPlotComponent((prev) => [...prev, point]);
+
+    plotData[fullDataIdx].marker.color[ptIdx] = "black";
+    plotData[fullDataIdx].marker.size[ptIdx] = "10";
+    plotData[fullDataIdx].marker.symbol[ptIdx] = "x";
   };
 
-  const onPlotDeselectPoint = (component: any, i: number) => {
+  const onPlotDeselectPoint = (point: Point, i: number) => {
     setPlotComponent((prev) => {
-      plotData[component.fullData.index].marker.color[component.pointIndex] =
-        traceColors[component.fullData.index];
-      plotData[component.fullData.index].marker.size[component.pointIndex] =
-        "5";
-      plotData[component.fullData.index].marker.symbol[component.pointIndex] =
-        "circle";
+      plotData[point.fullDataIdx].marker.color[point.ptIdx] = point.color;
+      plotData[point.fullDataIdx].marker.size[point.ptIdx] = "5";
+      plotData[point.fullDataIdx].marker.symbol[point.ptIdx] = "circle";
       return prev.filter((_, index) => index !== i);
     });
   };
@@ -93,7 +97,6 @@ export default function GraphForm() {
     ) {
       return;
     }
-    setLoading(true);
 
     // Create a Trace from the different selections
     const trace: Trace = {
@@ -101,8 +104,15 @@ export default function GraphForm() {
       color: traceColors[plotTraces.length],
       year: selectedYear,
     };
-    console.log(trace);
 
+    // Avoid duplicate traces
+    if (
+      plotTraces.some((t) => t.title === trace.title && t.year === trace.year)
+    ) {
+      return;
+    }
+
+    setLoading(true);
     setPlotTraces((prev) => [...prev, trace]);
   };
 
@@ -164,7 +174,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
         marker: {
           color: new Array(component.mpns.length).fill(traceColors[i]),
           symbol: new Array(component.mpns.length).fill("circle"),
-          size: new Array(component.mpns.length).fill(4),
+          size: new Array(component.mpns.length).fill(5),
         },
       };
       if (component.axes?.length > 2) {
@@ -387,45 +397,31 @@ MPN: <b>${component.mpns[idx]}</b><br>
             )}
           </div>
         </div>
-        {components && components?.length > 0 && (
-          <label>
-            Plotting{" "}
-            {components
-              ?.map((component) => component.axes?.[0].data.length)
-              .reduce((a, b) => a + b, 0)
-              .toLocaleString("en-US")}{" "}
-            components
-          </label>
-        )}
-        <div>
-          {plotComponent.map((component, i) => {
-            return (
-              // set background color to the color of the component
-              <div
-                style={{
-                  backgroundColor: traceColors[component.fullData.index],
-                  padding: "1.0em",
-                  margin: "0.5em",
-                  display: "flex",
-                }}
-              >
-                <div
-                  dangerouslySetInnerHTML={{ __html: component.text }}
-                  style={{ flex: 1 }}
-                />
-                <button
-                  style={{
-                    margin: "0.5em",
-                    verticalAlign: "middle",
-                  }}
-                  type="button"
-                  onClick={() => onPlotDeselectPoint(component, i)}
-                >
-                  Delete
-                </button>
-              </div>
-            );
-          })}
+        <div className="px-8 py-8">
+          {components && components?.length > 0 && (
+            <span className="pl-2">
+              Plotting{" "}
+              {components
+                ?.map((component) => component.axes?.[0].data.length)
+                .reduce((a, b) => a + b, 0)
+                .toLocaleString("en-US")}{" "}
+              components
+            </span>
+          )}
+          <div className="flex flex-nowrap pt-6">
+            {plotComponent.map((point, i) => {
+              return (
+                <div className="px-2">
+                  <PlotPoint
+                    point={point}
+                    onRemove={() => {
+                      onPlotDeselectPoint(point, i);
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

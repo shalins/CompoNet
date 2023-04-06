@@ -8,3 +8,12 @@ export type Trace = {
   color: string;
   year: string;
 };
+
+export type Point = {
+  ptIdx: number;
+  fullDataIdx: number;
+  mpn: string;
+  color: string;
+  manufacturer: string;
+  link: string;
+};
