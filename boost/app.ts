@@ -48,13 +48,18 @@ init(wasmFile)
         //console.log("Test Query:", query);
 
         const categories = toArray(req.query.categories);
+        const years = toArray(req.query.years);
         const attributes = toArray(req.query.attributes);
         let response: { [key: string]: any } = {};
-        for (const category of categories) {
-          const query = QueryGenerator.generate(category, attributes);
+        for (let i = 0; i < categories.length; i++) {
+          const query = QueryGenerator.generate(
+            categories[i],
+            years[i],
+            attributes
+          );
           const result = await client.query(query);
           console.log("QUERY SUCCEEDED:", query, result);
-          response[category] = result?.rows;
+          response[categories[i]] = result?.rows;
         }
 
         res.send(response);

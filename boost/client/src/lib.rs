@@ -102,13 +102,13 @@ impl QueryGenerator {
         }
     }
 
-    pub fn generate(category: &str, attributes: Array) -> String {
+    pub fn generate(category: &str, year: &str, attributes: Array) -> String {
         let attributes = attributes
             .iter()
             .map(|s| s.as_string().unwrap_or_default())
             .collect::<Vec<String>>();
 
-        let mut query = "SELECT mpn, manufacturer, ".to_string();
+        let mut query = "SELECT mpn, manufacturer, year, ".to_string();
         let mut query_end = "".to_string();
         attributes.iter().enumerate().for_each(|(i, attr)| {
             query = format!("{}{}", query, attr);
@@ -126,10 +126,12 @@ impl QueryGenerator {
         // interpret them differently.
 
         query = format!(
-            "{}{}{}{}{}{}",
+            "{}{}{}{}{}{}{}{}",
             query,
             " FROM public.final WHERE (",
             Self::interpret_category(category),
+            " AND year=",
+            year,
             ") AND (",
             query_end,
             ");"
@@ -194,7 +196,7 @@ impl QueryParser {
             .as_object()
             .unwrap()
             .keys()
-            .filter(|k| k != &"mpn" && k != &"manufacturer")
+            .filter(|k| k != &"mpn" && k != &"manufacturer" && k != &"year")
             .collect::<Vec<&String>>();
 
         // Go through each category and parse the data.
@@ -220,6 +222,21 @@ impl QueryParser {
                     d.as_object()
                         .unwrap()
                         .get("mpn")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string()
+                })
+                .collect::<Vec<String>>();
+
+            let years = category_data
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|d| {
+                    d.as_object()
+                        .unwrap()
+                        .get("year")
                         .unwrap()
                         .as_str()
                         .unwrap()
@@ -297,9 +314,10 @@ impl QueryParser {
 
             let component = componet::graph::Component {
                 name: category_name.to_string(),
+                axes,
                 mpns,
                 manufacturers,
-                axes,
+                years,
             };
             output.components.push(component);
             console::log_1(&JsValue::from_str(&format!(

@@ -366,4 +366,5 @@ column_map = {
     "volumetric_power_density": "volumetric_power_density",
     "gravimetric_power_density": "gravimetric_power_density",
     "energy_per_cost": "energy_per_cost",
+    "year": "year",
 }

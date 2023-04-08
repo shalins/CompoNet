@@ -170,7 +170,9 @@ export default function GraphForm() {
       const hoverText: string[] = component.mpns.map((_, idx) => {
         return `
 MPN: <b>${component.mpns[idx]}</b><br>
-				Manufacturer: <b>${component.manufacturers[idx]}</b>`;
+				Manufacturer: <b>${component.manufacturers[idx]}</b><br>
+				Year: <b>${component.years[idx]}</b><br>
+				`;
       });
       const plotSettings: { [key: string]: any } = {
         x: component.axes?.[0]?.data,
@@ -190,8 +192,10 @@ MPN: <b>${component.mpns[idx]}</b><br>
         mode: "markers",
         marker: {
           color: new Array(component.mpns.length).fill(
-            // TODO(SHALIN): Also compare the year.
-            plotTraces.find((t) => t.title === component.name)?.color ?? "black"
+            plotTraces.find(
+              // Just grab the first year since all components in the trace have the same year.
+              (t) => t.title === component.name && t.year === component.years[0]
+            )?.color ?? "black"
           ),
           symbol: new Array(component.mpns.length).fill("circle"),
           size: new Array(component.mpns.length).fill(5),
@@ -284,6 +288,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
         const id = COLUMNS.find((c) => c.name === component.title)?.id;
         if (id) {
           searchParams.append("categories", id as unknown as string);
+          searchParams.append("years", component.year);
         } else {
           console.warn("Could not find octopart id for component: ", component);
         }

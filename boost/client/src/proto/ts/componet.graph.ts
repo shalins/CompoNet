@@ -18,6 +18,7 @@ export interface Component {
   axes: Axis[];
   mpns: string[];
   manufacturers: string[];
+  years: string[];
 }
 
 export interface Components {
@@ -136,7 +137,7 @@ export const Axis = {
 };
 
 function createBaseComponent(): Component {
-  return { name: "", axes: [], mpns: [], manufacturers: [] };
+  return { name: "", axes: [], mpns: [], manufacturers: [], years: [] };
 }
 
 export const Component = {
@@ -152,6 +153,9 @@ export const Component = {
     }
     for (const v of message.manufacturers) {
       writer.uint32(34).string(v!);
+    }
+    for (const v of message.years) {
+      writer.uint32(42).string(v!);
     }
     return writer;
   },
@@ -175,6 +179,9 @@ export const Component = {
         case 4:
           message.manufacturers.push(reader.string());
           break;
+        case 5:
+          message.years.push(reader.string());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -189,6 +196,7 @@ export const Component = {
       axes: Array.isArray(object?.axes) ? object.axes.map((e: any) => Axis.fromJSON(e)) : [],
       mpns: Array.isArray(object?.mpns) ? object.mpns.map((e: any) => String(e)) : [],
       manufacturers: Array.isArray(object?.manufacturers) ? object.manufacturers.map((e: any) => String(e)) : [],
+      years: Array.isArray(object?.years) ? object.years.map((e: any) => String(e)) : [],
     };
   },
 
@@ -210,6 +218,11 @@ export const Component = {
     } else {
       obj.manufacturers = [];
     }
+    if (message.years) {
+      obj.years = message.years.map((e) => e);
+    } else {
+      obj.years = [];
+    }
     return obj;
   },
 
@@ -223,6 +236,7 @@ export const Component = {
     message.axes = object.axes?.map((e) => Axis.fromPartial(e)) || [];
     message.mpns = object.mpns?.map((e) => e) || [];
     message.manufacturers = object.manufacturers?.map((e) => e) || [];
+    message.years = object.years?.map((e) => e) || [];
     return message;
   },
 };

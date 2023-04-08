@@ -18,6 +18,7 @@ message Component {
 	repeated Axis axes = 2;
 	repeated string mpns = 3;
 	repeated string manufacturers = 4;
+	repeated string years = 5;
 }
 
 message Components {
