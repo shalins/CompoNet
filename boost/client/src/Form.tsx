@@ -105,6 +105,10 @@ export default function GraphForm() {
       year: selectedYear,
     };
 
+    // Clear the current selections
+    setSelectedComponent(undefined);
+    setSelectedYear(undefined);
+
     // Avoid duplicate traces
     if (
       plotTraces.some((t) => t.title === trace.title && t.year === trace.year)
@@ -186,9 +190,8 @@ MPN: <b>${component.mpns[idx]}</b><br>
         mode: "markers",
         marker: {
           color: new Array(component.mpns.length).fill(
-            plotTraces.find(
-              (t) => t.title === component.name && t.year === selectedYear
-            )?.color ?? "black"
+            // TODO(SHALIN): Also compare the year.
+            plotTraces.find((t) => t.title === component.name)?.color ?? "black"
           ),
           symbol: new Array(component.mpns.length).fill("circle"),
           size: new Array(component.mpns.length).fill(5),
@@ -335,6 +338,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
         <div className="px-8 pt-8">
           <Dropdown
             defaultText={"Select X-Axis"}
+            selectedOption={xAxisAttribute}
             options={COLUMNS.filter((column) => {
               return column.type === ColumnType.Attribute;
             }).map((column) => column.name)}
@@ -346,6 +350,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
         <div className="px-8 py-4">
           <Dropdown
             defaultText={"Select Y-Axis"}
+            selectedOption={yAxisAttribute}
             options={COLUMNS.filter((column) => {
               return column.type === ColumnType.Attribute;
             }).map((column) => column.name)}
@@ -360,6 +365,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
           <div className="col-span-1 px-2">
             <Dropdown
               defaultText={"Select Component"}
+              selectedOption={selectedComponent}
               options={COLUMNS.filter((column) => {
                 return column.type === ColumnType.Category;
               }).map((column) => column.name)}
@@ -369,6 +375,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
           <div className="col-span-1 px-2">
             <Dropdown
               defaultText={"Select Year"}
+              selectedOption={selectedYear}
               options={["2022"]}
               onSelect={setSelectedYear}
             />

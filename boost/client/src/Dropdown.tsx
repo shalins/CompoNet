@@ -1,27 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { useOutsideClick } from "./hooks/useOutsideClick";
 
 interface DropdownProps {
   defaultText: string;
+  selectedOption?: string;
   options: string[];
   onSelect: (option: string) => void;
 }
 
 export default function Dropdown({
   defaultText,
+  selectedOption,
   options,
   onSelect,
 }: DropdownProps) {
   const [showMenu, setShowMenu] = useState(false);
-  const [selectedOption, setSelected] = useState(defaultText);
 
   const handleSelectOption = (option: string) => {
-    setSelected(option);
     setShowMenu(!showMenu);
     onSelect(option);
   };
 
+  const ref = useRef();
+  useOutsideClick(ref, () => setShowMenu(false));
+
   return (
-    <div className="relative inline-block text-left border-2 border-black min-w-full">
+    <div
+      ref={ref as any}
+      className="relative inline-block text-left border-2 border-black min-w-full"
+    >
       <div>
         <button
           type="button"
@@ -31,7 +38,7 @@ export default function Dropdown({
           aria-expanded="true"
           onClick={() => setShowMenu(!showMenu)}
         >
-          {selectedOption}
+          {selectedOption ?? defaultText}
           <svg
             className={`h-5 w-5 ml-2 transition-transform transform ${
               showMenu ? "rotate-180" : ""
