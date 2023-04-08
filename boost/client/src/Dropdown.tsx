@@ -50,7 +50,7 @@ export default function Dropdown({
         </button>
       </div>
       {showMenu && (
-        <div className="w-full bg-white focus:outline-none absolute border-2 border-black">
+        <div className="w-full bg-white focus:outline-none absolute z-10 border-2 border-black">
           {options.map((option) => (
             <button
               className="text-left block w-full px-4 py-4 text-sm text-gray-700 hover:bg-gray-200 hover:text-gray-900 border-t border-black"
