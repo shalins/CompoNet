@@ -118,7 +118,20 @@ export default function GraphForm() {
 
   const removeFromPlot = (trace: Trace) => {
     setLoading(true);
-    setPlotTraces((prev) => prev.filter((t) => t !== trace));
+    setPlotTraces((prev) => {
+      const p = prev.filter((t) => t !== trace);
+      p.forEach((t, i) => (t.color = traceColors[i]));
+      return p;
+    });
+
+    // Handle the case for zero traces
+    if (plotTraces.length === 1) {
+      setComponents([]);
+      setPlotData([]);
+      setPlotLayout({});
+      setPlotComponent([]);
+      setLoading(false);
+    }
 
     // Reset the dropdown
     // setSelectedComponent("Select Component");
@@ -172,7 +185,11 @@ MPN: <b>${component.mpns[idx]}</b><br>
         type: "scattergl",
         mode: "markers",
         marker: {
-          color: new Array(component.mpns.length).fill(traceColors[i]),
+          color: new Array(component.mpns.length).fill(
+            plotTraces.find(
+              (t) => t.title === component.name && t.year === selectedYear
+            )?.color ?? "black"
+          ),
           symbol: new Array(component.mpns.length).fill("circle"),
           size: new Array(component.mpns.length).fill(5),
         },
@@ -247,7 +264,13 @@ MPN: <b>${component.mpns[idx]}</b><br>
 
   useEffect(() => {
     const computePlot = () => {
-      if (!xAxisAttribute || !yAxisAttribute || !graphData || !graphLayout) {
+      if (
+        !xAxisAttribute ||
+        !yAxisAttribute ||
+        !plotData ||
+        !plotLayout ||
+        plotTraces.length === 0
+      ) {
         return;
       }
 

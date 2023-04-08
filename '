@@ -56,7 +56,7 @@ export default function Dropdown({
               className="text-left block w-full px-4 py-4 text-sm text-gray-700 hover:bg-gray-200 hover:text-gray-900 border-t border-black"
               role="menuitem"
               onClick={() => handleSelectOption(option)}
-              key={options.indexOf(option)}
+              key={option}
             >
               {option}
             </button>
