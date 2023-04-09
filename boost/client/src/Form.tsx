@@ -323,6 +323,23 @@ MPN: <b>${component.mpns[idx]}</b><br>
               JSON.parse(componentString)
             ).components;
 
+            // Rearrage components to match the axis order, since the API
+            // is not guaranteed to return the components in the same order.
+            const xAxisIndex = components[0].axes.findIndex(
+              (axis) => axis.name === xAxisAttribute
+            );
+            const yAxisIndex = components[0].axes.findIndex(
+              (axis) => axis.name === yAxisAttribute
+            );
+            if (xAxisIndex !== 0 && yAxisIndex !== 1) {
+              components.forEach((component) => {
+                const xAxis = component.axes[xAxisIndex];
+                const yAxis = component.axes[yAxisIndex];
+                component.axes[xAxisIndex] = yAxis;
+                component.axes[yAxisIndex] = xAxis;
+              });
+            }
+
             setComponents(components);
             graphData(components);
             graphLayout(components);
