@@ -12,8 +12,11 @@ export default function PlotPoint({ point, onRemove }: PointProps) {
       <div className="flex items-start">
         <div className="flex items-center px-2 pt-1">
           <div
-            className="w-4 h-4"
-            style={{ backgroundColor: point.color }}
+            style={{
+              height: "1rem",
+              width: "1rem",
+              backgroundColor: point.color,
+            }}
           ></div>
         </div>
 

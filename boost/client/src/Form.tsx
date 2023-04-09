@@ -338,7 +338,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
   }, [plotTraces]);
 
   return (
-    <div className="grid grid-cols-12 grid-flow-col h-screen">
+    <div className="grid grid-cols-12 grid-flow-col h-main">
       <div className="col-span-3 border-r-2 border-black pr-4">
         <div className="px-8 pt-8">
           <Dropdown
