@@ -11,6 +11,7 @@ import { COLUMNS } from "./utils/octopart";
 import Dropdown from "./Dropdown";
 import PlotTrace from "./Trace";
 import PlotPoint from "./Point";
+import Alert from "./Alert";
 import { Trace, Point, Axis } from "./utils/types";
 
 export default function GraphForm() {
@@ -33,6 +34,9 @@ export default function GraphForm() {
 
   // Loading data from the database
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Error messages
+  const [alertMessage, setAlertMessage] = useState<string>();
 
   const traceColors = [
     "#1f77b4",
@@ -113,6 +117,9 @@ export default function GraphForm() {
     if (
       plotTraces.some((t) => t.title === trace.title && t.year === trace.year)
     ) {
+      setAlertMessage(
+        `Already added ${trace.title} (${trace.year}) to the plot`
+      );
       return;
     }
 
@@ -345,7 +352,18 @@ MPN: <b>${component.mpns[idx]}</b><br>
             graphLayout(components);
             setPlotComponent([]);
           } else {
-            console.warn("No components in the response");
+            const trace = plotTraces.find(
+              (t) =>
+                !components?.find(
+                  (c) => c.name === t.title && c.years[0] === t.year
+                )
+            );
+            if (trace) {
+              setAlertMessage(
+                `Could not find any data for ${trace.title} (${trace.year}) with the selected parameters.`
+              );
+              removeFromPlot(trace);
+            }
           }
           setLoading(false);
         });
@@ -384,6 +402,14 @@ MPN: <b>${component.mpns[idx]}</b><br>
       </div>
       <div className="col-span-9">
         <div className="grid grid-cols-3 pt-8 px-6">
+          {alertMessage && (
+            <div className="col-span-3 px-2 pb-4">
+              <Alert
+                message={alertMessage}
+                onClose={() => setAlertMessage("")}
+              />
+            </div>
+          )}
           <div className="col-span-1 px-2">
             <Dropdown
               defaultText={"Select Component"}
