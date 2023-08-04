@@ -1,6 +1,7 @@
 # CompoNet Specific
 # TODO(SHALIN): Revisit and clean up
 _*
+.env.local
 *.json
 *.csv
 experiments/
@@ -142,3 +143,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/data

@@ -1,4 +1,6 @@
 [core]
-    remote = drive
-['remote "drive"']
-    url = gdrive://1LQxieiXm5KYnTrLr-lSz6Qp8vmKRjzJA
+    autostage = true
+    remote = b2
+['remote "b2"']
+		url = s3://componet/data
+    endpointUrl = https://s3.us-east-005.backblazeb2.com
