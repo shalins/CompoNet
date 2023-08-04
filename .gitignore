@@ -4,7 +4,7 @@ _*
 *.json
 *.csv
 experiments/
-split.txt
+data/
 
 
 #VSCode
@@ -142,5 +142,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-/data
-/Ceramic_Capacitors.json
