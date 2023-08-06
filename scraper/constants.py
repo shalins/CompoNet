@@ -1,5 +1,9 @@
 import os
 
+# ZenRows Scraper API
+ZENROWS_API_ENDPOINT = "https://api.zenrows.com/v1/"
+ZENROWS_API_KEY = "cfb9d7c7fac045991417bae4a9a15db3f469fceb"
+
 API_ENDPOINT = "https://octopart.com/api/v4/internal"
 
 CURRENT_WD = os.getcwd()

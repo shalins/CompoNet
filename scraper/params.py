@@ -1,3 +1,4 @@
+from constants import API_ENDPOINT, ZENROWS_API_KEY
 from utils import get_query_name
 
 
@@ -11,6 +12,18 @@ def get_cookies(perimeterx_key):
         "_px": perimeterx_key,
     }
     return cookies
+
+
+def get_params_zenrows():
+    params = {
+        "url": API_ENDPOINT,
+        "apikey": ZENROWS_API_KEY,
+        "premium_proxy": "true",
+    }
+    headers = {
+        "Content-Type": "application/json",
+    }
+    return params, headers
 
 
 def get_headers(user_agent):

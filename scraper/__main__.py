@@ -1,15 +1,30 @@
-# import signal
+import json
+import signal
+
 import click
 import requests
 from categories import attributes_cache, categories_cache
-from constants import API_ENDPOINT, DEFAULT_USER_AGENT, MAX_PAGE_OFFSET, MAX_RESULTS
+from constants import (
+    API_ENDPOINT,
+    DEFAULT_USER_AGENT,
+    MAX_PAGE_OFFSET,
+    MAX_RESULTS,
+    ZENROWS_API_ENDPOINT,
+)
+from params import (
+    get_attribute_payload,
+    get_cookies,
+    get_headers,
+    get_params_zenrows,
+    get_parts_payload,
+)
 from plyer import notification
 from queries import ATTRIBUTE_BUCKET_QUERY, PART_SEARCH_QUERY
 from tqdm import tqdm
 from tqdm.contrib.itertools import product
 from utils import Colors, load_current_place, remove_current_place, save_current_place, save_data
 
-from metadata import get_attribute_payload, get_cookies, get_headers, get_parts_payload
+# from metadata import
 
 
 class OctopartScraper:
@@ -21,8 +36,8 @@ class OctopartScraper:
         self.attributes = attributes
         self.perimeterx_key = px
         self.user_agent = user_agent
-        # signal.signal(signal.SIGUSR1, self._fail_gracefully)
-        # signal.siginterrupt(signal.SIGUSR1, False)
+        signal.signal(signal.SIGUSR1, self._fail_gracefully)
+        signal.siginterrupt(signal.SIGUSR1, False)
 
     def _fail_gracefully(self, *args):
         if len(self.all_data) > 0:
@@ -32,6 +47,10 @@ class OctopartScraper:
                 f"\n{Colors.GREEN}FAILED GRACEFULLY\nSaving all intermediate data to"
                 f" {path}{Colors.ENDC}\n"
             )
+
+    def _get_zenrows_params(self):
+        params, headers = get_params_zenrows()
+        return params, headers
 
     def _get_request_params(self):
         cookies = get_cookies(self.perimeterx_key)
@@ -54,6 +73,28 @@ class OctopartScraper:
             query=query, category_id=self.category_id, start=start, limit=limit, **kwargs
         )
         response = requests.post(API_ENDPOINT, cookies=cookies, headers=headers, json=payload)
+        return response
+
+    def _get_buckets_response_zr(self, attribute_name):
+        query = ATTRIBUTE_BUCKET_QUERY
+        params, headers = self._get_zenrows_params()
+        payload = get_attribute_payload(
+            query=query, category_id=self.category_id, attribute=attribute_name
+        )
+        response = requests.post(
+            ZENROWS_API_ENDPOINT, params=params, headers=headers, data=json.dumps(payload)
+        )
+        return response
+
+    def _get_parts_response_zr(self, start, limit, **kwargs):
+        query = PART_SEARCH_QUERY
+        params, headers = self._get_zenrows_params()
+        payload = get_parts_payload(
+            query=query, category_id=self.category_id, start=start, limit=limit, **kwargs
+        )
+        response = requests.post(
+            ZENROWS_API_ENDPOINT, params=params, headers=headers, data=json.dumps(payload)
+        )
         return response
 
     def _fetch_attributes(self, response):
