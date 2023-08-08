@@ -70,7 +70,11 @@ class OctopartScraper:
         query = PART_SEARCH_QUERY
         cookies, headers = self._get_request_params()
         payload = get_parts_payload(
-            query=query, category_id=self.category_id, start=start, limit=limit, **kwargs
+            query=query,
+            category_id=self.category_id,
+            start=start,
+            limit=limit,
+            **kwargs,
         )
         response = requests.post(API_ENDPOINT, cookies=cookies, headers=headers, json=payload)
         return response
@@ -82,7 +86,10 @@ class OctopartScraper:
             query=query, category_id=self.category_id, attribute=attribute_name
         )
         response = requests.post(
-            ZENROWS_API_ENDPOINT, params=params, headers=headers, data=json.dumps(payload)
+            ZENROWS_API_ENDPOINT,
+            params=params,
+            headers=headers,
+            data=json.dumps(payload),
         )
         return response
 
@@ -90,10 +97,17 @@ class OctopartScraper:
         query = PART_SEARCH_QUERY
         params, headers = self._get_zenrows_params()
         payload = get_parts_payload(
-            query=query, category_id=self.category_id, start=start, limit=limit, **kwargs
+            query=query,
+            category_id=self.category_id,
+            start=start,
+            limit=limit,
+            **kwargs,
         )
         response = requests.post(
-            ZENROWS_API_ENDPOINT, params=params, headers=headers, data=json.dumps(payload)
+            ZENROWS_API_ENDPOINT,
+            params=params,
+            headers=headers,
+            data=json.dumps(payload),
         )
         return response
 
@@ -237,7 +251,8 @@ class OctopartScraper:
                         f" {path}{Colors.ENDC}\n"
                     )
                     break
-            except:
+            except Exception as e:
+                print(f"Exception occurred: {e}")
                 self._fail_gracefully()
 
 
