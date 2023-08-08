@@ -43,7 +43,7 @@ class OctopartScraper:
         signal.signal(signal.SIGUSR1, self._fail_gracefully)
         signal.siginterrupt(signal.SIGUSR1, False)
 
-    def _send_telegram_notification(message):
+    def _send_telegram_notification(self, message):
         TOKEN = os.environ.get("TELEGRAM_TOKEN")
         CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
@@ -51,7 +51,7 @@ class OctopartScraper:
         response = requests.post(url, data=data)
         return response.status_code
 
-    def _send_os_notification(title, message):
+    def _send_os_notification(self, title, message):
         # Only send on MacOS
         if platform.system() == "Darwin":
             notification.notify(
