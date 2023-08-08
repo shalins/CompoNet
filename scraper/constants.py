@@ -19,3 +19,6 @@ DEFAULT_USER_AGENT = (
 )
 MAX_PAGE_OFFSET = 1000
 MAX_RESULTS = 100
+
+ERROR_TITLE = "PerimeterX Captcha"
+ERROR_MESSAGE = "PerimeterX error, please enter another PerimeterX key."

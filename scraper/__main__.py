@@ -1,4 +1,6 @@
 import json
+import os
+import platform
 import signal
 
 import click
@@ -7,6 +9,8 @@ from categories import attributes_cache, categories_cache
 from constants import (
     API_ENDPOINT,
     DEFAULT_USER_AGENT,
+    ERROR_MESSAGE,
+    ERROR_TITLE,
     MAX_PAGE_OFFSET,
     MAX_RESULTS,
     ZENROWS_API_ENDPOINT,
@@ -38,6 +42,24 @@ class OctopartScraper:
         self.user_agent = user_agent
         signal.signal(signal.SIGUSR1, self._fail_gracefully)
         signal.siginterrupt(signal.SIGUSR1, False)
+
+    def _send_telegram_notification(message):
+        TOKEN = os.environ.get("TELEGRAM_TOKEN")
+        CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        data = {"chat_id": CHAT_ID, "text": message}
+        response = requests.post(url, data=data)
+        return response.status_code
+
+    def _send_os_notification(title, message):
+        # Only send on MacOS
+        if platform.system() == "Darwin":
+            notification.notify(
+                title=title,
+                message=message,
+                app_icon="cap.ico",
+                timeout=10,
+            )
 
     def _fail_gracefully(self, *args):
         if len(self.all_data) > 0:
@@ -153,12 +175,11 @@ class OctopartScraper:
 
                     perimeterx_error = False
                     self.restarting = True
-                    notification.notify(
-                        title="PerimeterX Captcha",
-                        message="PerimeterX error, please enter another PerimeterX key.",
-                        app_icon="cap.ico",
-                        timeout=10,
-                    )
+
+                    # Notify
+                    self._send_os_notification(ERROR_TITLE, ERROR_MESSAGE)
+                    self._send_telegram_notification(ERROR_MESSAGE)
+
                     self.perimeterx_key = click.prompt(
                         f"\n{Colors.BLUE}Please enter a Perimeter X key:{Colors.ENDC}",
                         type=str,
