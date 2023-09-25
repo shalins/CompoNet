@@ -2,8 +2,7 @@ pub const ENDPOINT: &str = "https://octopart.com/api/v4/internal";
 pub const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36";
 
 pub const ATTRIBUTE_BUCKET_QUERY: &str = r"
-query FilterModalSearch($attribute_names: [String!]!, $currency: String!, \
-  $filters: Map, $in_stock_only: Boolean, $q: String) {
+query FilterModalSearch($attribute_names: [String!]!, $currency: String!, $filters: Map, $in_stock_only: Boolean, $q: String) {
     search(currency: $currency, filters: $filters, in_stock_only: $in_stock_only, q: $q) {
         hits
         spec_aggs(attribute_names: $attribute_names, size: 100) {
