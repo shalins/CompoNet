@@ -1,6 +1,6 @@
 use serde_json::{Error, Value};
 use std::collections::HashMap;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Bucket {
     pub count: usize,
     pub display_value: String,
@@ -14,13 +14,13 @@ pub struct AttributeBuckets {
 
 #[derive(Debug, Default)]
 pub struct FilterCombination {
-    combination: Vec<String>,
-    count: usize,
+    pub combination: Vec<String>,
+    pub count: usize,
 }
 
 #[derive(Debug, Default)]
 pub struct FilterCombinations {
-    combinations: Vec<FilterCombination>,
+    pub combinations: Vec<FilterCombination>,
 }
 
 pub struct ResponseHandler();
