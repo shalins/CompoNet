@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::io::Error;
+use std::time::Duration;
 
-use reqwest::{header::HeaderMap, header::HeaderValue, Client};
+use reqwest::{header, Client};
+
 use serde_json::{json, Map, Value};
 
 use crate::categories::{ATTRIBUTES_CACHE, CATEGORIES_CACHE};
@@ -19,7 +21,6 @@ pub enum RequestType {
 
 pub struct RequestSender {
     client: Client,
-    headers: Option<HeaderMap>,
     pub category_name: Option<String>,
     category_id: Option<String>,
     attribute_ids: Option<Vec<String>>,
@@ -28,15 +29,21 @@ pub struct RequestSender {
 
 impl RequestSender {
     pub fn new(args: &Arguments) -> Self {
-        let client = Client::new();
-        let headers = RequestSender::parse_headers(args).ok();
+        let client = Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .connection_verbose(true)
+            .http1_only()
+            .http1_title_case_headers()
+            .cookie_store(true)
+            .timeout(Duration::from_secs(10))
+            .build()
+            .unwrap();
         let category_name = args.category_name.clone();
         let category_id = RequestSender::parse_category(args).ok();
         let attribute_names = args.attribute_names.clone();
         let attribute_ids = RequestSender::parse_attributes(args).ok();
         Self {
             client,
-            headers,
             category_name,
             category_id,
             attribute_names,
@@ -60,18 +67,21 @@ impl RequestSender {
         self.attribute_ids.as_ref()
     }
 
-    fn parse_headers(args: &Arguments) -> Result<HeaderMap, Error> {
-        let mut headers = HeaderMap::new();
+    fn parse_headers(&self, args: &Arguments) -> Result<header::HeaderMap, Error> {
+        let mut headers = header::HeaderMap::new();
         if let Some(px) = &args.px {
             headers.insert(
                 reqwest::header::COOKIE,
-                HeaderValue::from_str(px.as_str()).expect("Failed to parse px header"),
+                header::HeaderValue::from_str(&format!("_px={}", px.as_str()))
+                    .expect("Failed to parse px header"),
             );
         }
+        // headers.insert("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36".parse().unwrap());
+
         if let Some(user_agent) = &args.user_agent {
             headers.insert(
                 reqwest::header::USER_AGENT,
-                HeaderValue::from_str(user_agent.as_str())
+                header::HeaderValue::from_str(user_agent.as_str())
                     .expect("Failed to parse user agent header"),
             );
         }
@@ -165,7 +175,13 @@ impl RequestSender {
         json_data
     }
 
-    pub async fn send_request(&self, request_type: RequestType) -> Result<Value, Error> {
+    pub async fn send_request(
+        &self,
+        args: &Arguments,
+        request_type: RequestType,
+    ) -> Result<Value, Error> {
+        let headers = self.parse_headers(args)?;
+        // println!("Headers: {:?}", headers);
         let body = match request_type {
             RequestType::Attributes => self.get_attributes_payload(),
             RequestType::Parts => self.get_parts_payload(),
@@ -180,10 +196,6 @@ impl RequestSender {
                 self.get_component_count_payload(attributes, filters)
             }
         };
-        let headers = self.headers.clone().ok_or(Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "Headers are required",
-        ))?;
         let response = self
             .client
             .post(ENDPOINT)
@@ -192,7 +204,19 @@ impl RequestSender {
             .send()
             .await
             .expect("Failed to send request");
-        let response: Value = response.json().await.expect("Failed to parse response");
+        let response_string = response.text().await.map_err(|e| {
+            Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to parse response: {}", e),
+            )
+        })?;
+        // println!("Raw response string: {}", response_string);
+        let response = serde_json::from_str(&response_string).map_err(|e| {
+            Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to deserialize JSON: {}", e),
+            )
+        })?;
         Ok(response)
     }
 }

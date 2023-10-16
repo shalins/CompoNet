@@ -1,5 +1,12 @@
 use serde_json::{Error, Value};
 use std::collections::HashMap;
+
+#[derive(Clone, Debug)]
+pub struct BucketPair {
+    pub first: Option<(String, Bucket)>,
+    pub second: (String, Bucket),
+}
+
 #[derive(Debug, Clone)]
 pub struct Bucket {
     pub count: usize,
@@ -23,6 +30,7 @@ pub struct FilterCombinations {
     pub combinations: Vec<FilterCombination>,
 }
 
+#[derive(Default)]
 pub struct ResponseHandler();
 
 impl ResponseHandler {
