@@ -2,6 +2,24 @@ use serde_json::{Error, Value};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
+pub struct Filter {
+    pub display_id: String,
+    pub bucket_value: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct PartitionedCombination {
+    pub filters: Vec<Filter>,
+    pub start: usize,
+    pub end: usize,
+}
+
+#[derive(Clone, Debug)]
+pub struct PartitionedCombinations {
+    pub partitions: Vec<PartitionedCombination>,
+}
+
+#[derive(Clone, Debug)]
 pub struct BucketPair {
     pub first: Option<(String, Bucket)>,
     pub second: (String, Bucket),
@@ -21,7 +39,7 @@ pub struct AttributeBuckets {
 
 #[derive(Debug, Default)]
 pub struct FilterCombination {
-    pub combination: Vec<String>,
+    pub combination: HashMap<String, String>,
     pub count: usize,
 }
 
@@ -85,7 +103,8 @@ impl ResponseHandler {
     pub async fn extract_filter_combinations(
         &self,
         json: Value,
-        attribute_ids: Vec<String>,
+        attribute_ids: HashMap<String, String>,
+        last_attribute_id: String,
     ) -> Result<FilterCombinations, Error> {
         let mut filter_combinations = FilterCombinations::default();
         if let Some(spec_aggs) = json
@@ -94,21 +113,41 @@ impl ResponseHandler {
         {
             for bucket in spec_aggs.iter() {
                 let mut attribute_ids = attribute_ids.clone();
-                attribute_ids.push(
+                attribute_ids.insert(
+                    last_attribute_id.clone(),
                     bucket
-                        .get("display_value")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("")
-                        .to_string(),
+                        .get("float_value")
+                        .and_then(|v| v.as_f64())
+                        .map(|f| f.to_string())
+                        .or({
+                            bucket
+                                .get("display_value")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string())
+                        })
+                        .unwrap_or("".to_string()),
                 );
-                let combination = FilterCombination {
-                    combination: attribute_ids.clone(),
+                let filter_combination = FilterCombination {
+                    combination: attribute_ids,
                     count: bucket.get("count").and_then(|v| v.as_u64()).unwrap_or(0) as usize,
                 };
-                filter_combinations.combinations.push(combination);
+                filter_combinations.combinations.push(filter_combination);
             }
         }
         Ok(filter_combinations)
+    }
+
+    pub async fn extract_components(&self, json: Value) -> Result<Vec<Value>, anyhow::Error> {
+        match json
+            .pointer("/data/search/results")
+            .and_then(|v| v.as_array())
+        {
+            Some(results) => Ok(results.clone()),
+            None => {
+                println!("JSON: {:?}", json);
+                Err(anyhow::Error::msg("No results found"))
+            }
+        }
     }
 }
 

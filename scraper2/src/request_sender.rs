@@ -12,7 +12,11 @@ use crate::config::{ATTRIBUTE_BUCKET_QUERY, ENDPOINT, PART_SEARCH_QUERY};
 
 pub enum RequestType {
     Attributes,
-    Parts,
+    Parts {
+        filters: HashMap<String, Vec<String>>,
+        start: usize,
+        end: usize,
+    },
     ComponentCount {
         attributes: Option<Vec<String>>,
         filters: Option<HashMap<String, Vec<String>>>,
@@ -152,23 +156,31 @@ impl RequestSender {
             },
             "query": ATTRIBUTE_BUCKET_QUERY.to_string(),
         });
+        println!("BODY HEADER: {:?}", json_data);
         json_data
     }
 
-    fn get_parts_payload(&self) -> Value {
+    fn get_parts_payload(
+        &self,
+        filters: HashMap<String, Vec<String>>,
+        start: usize,
+        end: usize,
+    ) -> Value {
+        let filter_map = filters;
+        let mut filters = Map::new();
+        filters.insert("category_id".to_string(), json!([self.category_id]));
+        filter_map.iter().for_each(|(k, v)| {
+            filters.insert(k.to_string(), json!(v));
+        });
         let json_data = json!({
             "operationName": "PricesViewSearch",
             "variables": {
                 "country": "US",
                 "currency": "USD",
-                "filters": {
-                    "category_id": [
-                        [self.category_id],
-                    ],
-                },
+                "filters": filters,
                 "in_stock_only": false,
-                "limit": 100,
-                "start": 0,
+                "limit": end,
+                "start": start,
             },
             "query": PART_SEARCH_QUERY.to_string(),
         });
@@ -184,7 +196,11 @@ impl RequestSender {
         // println!("Headers: {:?}", headers);
         let body = match request_type {
             RequestType::Attributes => self.get_attributes_payload(),
-            RequestType::Parts => self.get_parts_payload(),
+            RequestType::Parts {
+                filters,
+                start,
+                end,
+            } => self.get_parts_payload(filters, start, end),
             RequestType::ComponentCount {
                 attributes,
                 filters,
@@ -212,6 +228,7 @@ impl RequestSender {
         })?;
         // println!("Raw response string: {}", response_string);
         let response = serde_json::from_str(&response_string).map_err(|e| {
+            println!("Raw response string: {}", response_string);
             Error::new(
                 std::io::ErrorKind::Other,
                 format!("Failed to deserialize JSON: {}", e),

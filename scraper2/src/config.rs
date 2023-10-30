@@ -18,10 +18,8 @@ query FilterModalSearch($attribute_names: [String!]!, $currency: String!, $filte
 
 #[allow(dead_code)]
 pub const PART_SEARCH_QUERY: &str = r"
-query PricesViewSearch($country: String!, $currency: String!, $filters: Map, $in_stock_only: \
-  Boolean, $limit: Int!, $q: String, $sort: String, $sort_dir: SortDirection, $start: Int) {
-  search(country: $country, currency: $currency, filters: $filters, in_stock_only: $in_stock_only, \
-    limit: $limit, q: $q, sort: $sort, sort_dir: $sort_dir, start: $start) {
+query PricesViewSearch($country: String!, $currency: String!, $filters: Map, $in_stock_only: Boolean, $limit: Int!, $q: String, $sort: String, $sort_dir: SortDirection, $start: Int) {
+  search(country: $country, currency: $currency, filters: $filters, in_stock_only: $in_stock_only, limit: $limit, q: $q, sort: $sort, sort_dir: $sort_dir, start: $start) {
     applied_category {
       ancestors {
         id
