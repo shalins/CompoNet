@@ -1,4 +1,4 @@
-use crate::config::DEFAULT_USER_AGENT;
+use crate::config::constants::DEFAULT_USER_AGENT;
 
 use clap::Parser;
 use dialoguer::Input;

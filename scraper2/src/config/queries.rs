@@ -1,5 +1,3 @@
-pub const ENDPOINT: &str = "https://octopart.com/api/v4/internal";
-pub const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36";
 
 pub const ATTRIBUTE_BUCKET_QUERY: &str = r"
 query FilterModalSearch($attribute_names: [String!]!, $currency: String!, $filters: Map, $in_stock_only: Boolean, $q: String) {
@@ -16,7 +14,6 @@ query FilterModalSearch($attribute_names: [String!]!, $currency: String!, $filte
 }
 ";
 
-#[allow(dead_code)]
 pub const PART_SEARCH_QUERY: &str = r"
 query PricesViewSearch($country: String!, $currency: String!, $filters: Map, $in_stock_only: Boolean, $limit: Int!, $q: String, $sort: String, $sort_dir: SortDirection, $start: Int) {
   search(country: $country, currency: $currency, filters: $filters, in_stock_only: $in_stock_only, limit: $limit, q: $q, sort: $sort, sort_dir: $sort_dir, start: $start) {

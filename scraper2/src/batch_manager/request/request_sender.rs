@@ -6,9 +6,10 @@ use reqwest::{header, Client};
 
 use serde_json::{json, Map, Value};
 
-use crate::categories::{ATTRIBUTES_CACHE, CATEGORIES_CACHE};
+use crate::config::categories::{ATTRIBUTES_MAP, CATEGORIES_MAP};
 use crate::cli::Arguments;
-use crate::config::{ATTRIBUTE_BUCKET_QUERY, ENDPOINT, PART_SEARCH_QUERY};
+use crate::config::constants::ENDPOINT;
+use crate::config::queries::{ATTRIBUTE_BUCKET_QUERY, PART_SEARCH_QUERY};
 
 pub enum RequestType {
     Attributes,
@@ -80,7 +81,6 @@ impl RequestSender {
                     .expect("Failed to parse px header"),
             );
         }
-        // headers.insert("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36".parse().unwrap());
 
         if let Some(user_agent) = &args.user_agent {
             headers.insert(
@@ -94,7 +94,7 @@ impl RequestSender {
 
     fn parse_category(args: &Arguments) -> Result<String, Error> {
         match &args.category_name {
-            Some(category_name) => Ok((*CATEGORIES_CACHE.get(category_name).unwrap()).to_string()),
+            Some(category_name) => Ok((*CATEGORIES_MAP.get(category_name).unwrap()).to_string()),
             None => Err(Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "Category name is required",
@@ -107,7 +107,7 @@ impl RequestSender {
             Some(attribute_names) => Ok(attribute_names
                 .to_vec()
                 .iter()
-                .map(|attribute_name| (*ATTRIBUTES_CACHE.get(attribute_name).unwrap()).to_string())
+                .map(|attribute_name| (*ATTRIBUTES_MAP.get(attribute_name).unwrap()).to_string())
                 .collect()),
             None => Err(Error::new(
                 std::io::ErrorKind::InvalidInput,
