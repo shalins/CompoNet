@@ -10,8 +10,7 @@ use crate::cli::Arguments;
 
 use crate::batch_manager::request::request_sender::{RequestSender, RequestType};
 use crate::batch_manager::request::response_handler::{
-    AttributeBuckets, Bucket, BucketPair, FilterCombination, FilterCombinations,
-    ResponseHandler,
+    AttributeBuckets, Bucket, BucketPair, FilterCombination, FilterCombinations, ResponseHandler,
 };
 
 pub struct ComponentCounter {
@@ -336,5 +335,4 @@ impl ComponentCounter {
             })
             .collect()
     }
-
 }

@@ -1,11 +1,13 @@
-use anyhow::{Result};
-use tokio::{fs::File, io::AsyncWriteExt};
+use anyhow::Result;
 use serde_json::Value;
+use tokio::{fs::File, io::AsyncWriteExt};
 
-pub struct DataManager { }
+pub struct DataManager {}
 
 impl DataManager {
-    pub fn new() -> Self { Self { } }
+    pub fn new() -> Self {
+        Self {}
+    }
 
     pub async fn save_to_disk(&self, data: Result<Vec<Result<Vec<Value>>>>) -> Result<()> {
         // 1. Flatten the structure by handling potential errors

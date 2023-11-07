@@ -1,4 +1,3 @@
-
 pub const ATTRIBUTE_BUCKET_QUERY: &str = r"
 query FilterModalSearch($attribute_names: [String!]!, $currency: String!, $filters: Map, $in_stock_only: Boolean, $q: String) {
     search(currency: $currency, filters: $filters, in_stock_only: $in_stock_only, q: $q) {

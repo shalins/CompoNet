@@ -11,9 +11,9 @@ use fetch::components::ComponentScraper;
 use fetch::counts::ComponentCounter;
 
 mod request;
+use crate::data_manager::DataManager;
 use request::request_sender::{RequestSender, RequestType};
 use request::response_handler::ResponseHandler;
-use crate::data_manager::DataManager;
 
 pub struct BatchManager {
     args: Arc<RwLock<Arguments>>,
@@ -67,7 +67,9 @@ impl BatchManager {
 
         println!("Finished grabbing bucket combination counts, grabbing components");
 
-        let partitions = component_scraper.get_partitioned_combinations(all_combinations).await;
+        let partitions = component_scraper
+            .get_partitioned_combinations(all_combinations)
+            .await;
         println!("Partitions: {:?}", partitions);
         let data = component_scraper
             .process_components(request_sender, response_handler, partitions)

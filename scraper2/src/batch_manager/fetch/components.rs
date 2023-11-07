@@ -11,8 +11,7 @@ use crate::cli::Arguments;
 
 use crate::batch_manager::request::request_sender::{RequestSender, RequestType};
 use crate::batch_manager::request::response_handler::{
-    Filter, FilterCombinations,
-    PartitionedCombination, PartitionedCombinations, ResponseHandler,
+    Filter, FilterCombinations, PartitionedCombination, PartitionedCombinations, ResponseHandler,
 };
 use crate::config::constants::OCTOPART_DEFAULT_RESULT_LIMIT;
 
@@ -198,5 +197,4 @@ impl ComponentScraper {
             })
             .collect()
     }
-
 }
