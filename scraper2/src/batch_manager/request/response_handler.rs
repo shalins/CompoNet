@@ -1,61 +1,27 @@
+use crate::batch_manager::types::{
+    AttributeBuckets, Bucket, FilterCombination, FilterCombinations,
+};
 use serde_json::{Error, Value};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug)]
-pub struct Filter {
-    pub display_id: String,
-    pub bucket_value: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct PartitionedCombination {
-    pub filters: Vec<Filter>,
-    pub start: usize,
-    pub end: usize,
-}
-
-#[derive(Clone, Debug)]
-pub struct PartitionedCombinations {
-    pub partitions: Vec<PartitionedCombination>,
-}
-
-#[derive(Clone, Debug)]
-pub struct BucketPair {
-    pub first: Option<(String, Bucket)>,
-    pub second: (String, Bucket),
-}
-
-#[derive(Debug, Clone)]
-pub struct Bucket {
-    pub count: usize,
-    pub display_value: String,
-    pub float_value: Option<String>,
-}
-
-#[derive(Debug)]
-pub struct AttributeBuckets {
-    pub buckets: HashMap<String, Vec<Bucket>>,
-}
-
-#[derive(Debug, Default)]
-pub struct FilterCombination {
-    pub combination: HashMap<String, String>,
-    pub count: usize,
-}
-
-#[derive(Debug, Default)]
-pub struct FilterCombinations {
-    pub combinations: Vec<FilterCombination>,
-}
-
+/// Handles the extraction of data from JSON responses.
 #[derive(Default)]
 pub struct ResponseHandler();
 
 impl ResponseHandler {
+    /// Constructs a new `ResponseHandler`.
     pub fn new() -> Self {
-        Self {}
+        Self::default()
     }
 
+    /// Extracts attribute buckets from the provided JSON value.
+    ///
+    /// # Arguments
+    /// * `json` - The JSON value containing the response data.
+    /// * `attribute_ids` - A slice of attribute ID strings to be extracted.
+    ///
+    /// # Returns
+    /// A `Result` containing `AttributeBuckets` on success or an `Error` if extraction fails.
     pub async fn extract_buckets(
         &self,
         json: Value,
@@ -100,6 +66,15 @@ impl ResponseHandler {
         })
     }
 
+    /// Extracts filter combinations from the JSON response based on given attribute IDs.
+    ///
+    /// # Arguments
+    /// * `json` - The JSON value containing the response data.
+    /// * `attribute_ids` - A hashmap of attribute IDs to their corresponding values.
+    /// * `last_attribute_id` - The last attribute ID in the sequence to be processed.
+    ///
+    /// # Returns
+    /// A `Result` containing `FilterCombinations` on success or an `Error` if extraction fails.
     pub async fn extract_filter_combinations(
         &self,
         json: Value,
@@ -137,6 +112,13 @@ impl ResponseHandler {
         Ok(filter_combinations)
     }
 
+    /// Extracts a list of components from the JSON response.
+    ///
+    /// # Arguments
+    /// * `json` - The JSON value containing the response data.
+    ///
+    /// # Returns
+    /// A `Result` containing a `Vec<Value>` representing components on success, or an `anyhow::Error` if no results are found.
     pub async fn extract_components(&self, json: Value) -> Result<Vec<Value>, anyhow::Error> {
         match json
             .pointer("/data/search/results")

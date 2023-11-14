@@ -1,0 +1,64 @@
+use std::collections::{HashMap, VecDeque};
+
+use anyhow::Result;
+use async_trait::async_trait;
+use serde_json::Value;
+use tokio::task::JoinHandle;
+
+use crate::batch_manager::{
+    fetch::tasks::{process_tasks_helper, TaskProcessor},
+    request::request_sender::RequestType,
+    types::PartitionedCombination,
+};
+
+use super::ComponentScraper;
+
+#[derive(Clone, Debug)]
+pub struct ComponentTaskData {
+    pub partition: PartitionedCombination,
+}
+
+#[async_trait]
+impl TaskProcessor for ComponentScraper {
+    type TaskType = ComponentTaskData;
+    type TaskResult = Vec<Value>;
+    type TaskError = anyhow::Error;
+
+    fn create_task(
+        &self,
+        task_data: Self::TaskType,
+    ) -> JoinHandle<Result<Self::TaskResult, Self::TaskError>> {
+        let mut filters = HashMap::new();
+        for filter in task_data.partition.filters.iter() {
+            filters.insert(filter.display_id.clone(), vec![filter.bucket_value.clone()]);
+        }
+
+        let args = self.args.clone();
+        let request_sender = self.request_sender.clone();
+        let response_handler = self.response_handler.clone();
+
+        tokio::spawn(async move {
+            let response = request_sender
+                .clone()
+                .send_request(
+                    &*args.read().await,
+                    RequestType::Parts {
+                        filters,
+                        start: task_data.partition.start,
+                        end: task_data.partition.end,
+                    },
+                )
+                .await
+                .map_err(anyhow::Error::new)?;
+
+            response_handler.extract_components(response).await
+        })
+    }
+
+    async fn process_tasks(
+        &self,
+        task_data_queue: VecDeque<Self::TaskType>,
+    ) -> Result<Vec<Result<Self::TaskResult>>> {
+        process_tasks_helper(self, task_data_queue, self.batch_size, self.args.clone()).await
+    }
+}

@@ -6,24 +6,29 @@ use reqwest::{header, Client};
 
 use serde_json::{json, Map, Value};
 
-use crate::config::categories::{ATTRIBUTES_MAP, CATEGORIES_MAP};
 use crate::cli::Arguments;
+use crate::config::categories::{ATTRIBUTES_MAP, CATEGORIES_MAP};
 use crate::config::constants::ENDPOINT;
 use crate::config::queries::{ATTRIBUTE_BUCKET_QUERY, PART_SEARCH_QUERY};
 
+/// Enumerates different types of requests that can be handled.
 pub enum RequestType {
+    /// Request for attributes.
     Attributes,
+    /// Request for parts, with filters and pagination options.
     Parts {
         filters: HashMap<String, Vec<String>>,
         start: usize,
         end: usize,
     },
+    /// Request for counting components with optional attributes and filters.
     ComponentCount {
         attributes: Option<Vec<String>>,
         filters: Option<HashMap<String, Vec<String>>>,
     },
 }
 
+/// Manages the sending of different types of requests to a remote endpoint.
 pub struct RequestSender {
     client: Client,
     pub category_name: Option<String>,
@@ -33,6 +38,7 @@ pub struct RequestSender {
 }
 
 impl RequestSender {
+    /// Creates a new instance of `RequestSender` with initial configuration from the provided arguments.
     pub fn new(args: &Arguments) -> Self {
         let client = Client::builder()
             .redirect(reqwest::redirect::Policy::none())
@@ -56,14 +62,19 @@ impl RequestSender {
         }
     }
 
+    // Getter methods
+
+    #[allow(dead_code)]
     pub fn get_category_name(&self) -> Option<&String> {
         self.category_name.as_ref()
     }
 
+    #[allow(dead_code)]
     pub fn get_attribute_names(&self) -> Option<&Vec<String>> {
         self.attribute_names.as_ref()
     }
 
+    #[allow(dead_code)]
     pub fn get_category_id(&self) -> Option<&String> {
         self.category_id.as_ref()
     }
@@ -72,6 +83,13 @@ impl RequestSender {
         self.attribute_ids.as_ref()
     }
 
+    /// Parses HTTP headers from the given arguments for constructing a request.
+    ///
+    /// # Arguments
+    /// * `args` - Application arguments containing potential headers like cookies and user agent.
+    ///
+    /// # Returns
+    /// A `Result` containing the `HeaderMap` on success, or an `Error` if header parsing fails.
     fn parse_headers(&self, args: &Arguments) -> Result<header::HeaderMap, Error> {
         let mut headers = header::HeaderMap::new();
         if let Some(px) = &args.px {
@@ -92,6 +110,13 @@ impl RequestSender {
         Ok(headers)
     }
 
+    /// Determines the category ID from the provided arguments.
+    ///
+    /// # Arguments
+    /// * `args` - Application arguments containing the category name.
+    ///
+    /// # Returns
+    /// A `Result` with the parsed category ID as `String` on success, or an `Error` if the category is not found.
     fn parse_category(args: &Arguments) -> Result<String, Error> {
         match &args.category_name {
             Some(category_name) => Ok((*CATEGORIES_MAP.get(category_name).unwrap()).to_string()),
@@ -102,6 +127,13 @@ impl RequestSender {
         }
     }
 
+    /// Retrieves a list of attribute IDs based on the provided argument names.
+    ///
+    /// # Arguments
+    /// * `args` - Application arguments containing attribute names.
+    ///
+    /// # Returns
+    /// A `Result` with a `Vec<String>` of attribute IDs on success, or an `Error` if any attribute name is not found.
     fn parse_attributes(args: &Arguments) -> Result<Vec<String>, Error> {
         match &args.attribute_names {
             Some(attribute_names) => Ok(attribute_names
@@ -116,14 +148,21 @@ impl RequestSender {
         }
     }
 
-    /// Creates the payload for the request for getting attributes.
+    /// Constructs the payload for the 'ComponentCount' request with optional attributes and filters.
+    ///
+    /// # Arguments
+    /// * `attribute_names` - Optional list of attribute names to include in the request.
+    /// * `filters` - Optional hashmap of filters to apply in the request.
+    ///
+    /// # Returns
+    /// A `Value` representing the JSON payload for the request.
     pub fn get_component_count_payload(
         &self,
         attribute_names: Option<Vec<String>>,
         filters: Option<HashMap<String, Vec<String>>>,
     ) -> Value {
         // If attribute is Some, then we want to put it into a Vec, otherwise an empty Vec
-        let filter_map = filters.unwrap_or(HashMap::new());
+        let filter_map = filters.unwrap_or_default();
         let mut filters = Map::new();
         filters.insert("category_id".to_string(), json!([self.category_id]));
         filter_map.iter().for_each(|(k, v)| {
@@ -142,7 +181,10 @@ impl RequestSender {
         json_data
     }
 
-    /// Creates the payload for the request for getting attributes.
+    /// Builds the payload for an 'Attributes' request using configured attributes in the instance.
+    ///
+    /// # Returns
+    /// A `Value` representing the JSON payload for the request.
     fn get_attributes_payload(&self) -> Value {
         let json_data = json!({
             "operationName": "FilterModalSearch",
@@ -160,6 +202,15 @@ impl RequestSender {
         json_data
     }
 
+    /// Prepares the payload for a 'Parts' request with specified filters and pagination.
+    ///
+    /// # Arguments
+    /// * `filters` - A hashmap of filters to apply in the request.
+    /// * `start` - The starting index for pagination.
+    /// * `end` - The ending index for pagination.
+    ///
+    /// # Returns
+    /// A `Value` representing the JSON payload for the request.
     fn get_parts_payload(
         &self,
         filters: HashMap<String, Vec<String>>,
@@ -187,6 +238,14 @@ impl RequestSender {
         json_data
     }
 
+    /// Sends a request to the server based on the specified `RequestType` and provided arguments.
+    ///
+    /// # Arguments
+    /// * `args` - Application arguments to be used for the request.
+    /// * `request_type` - The type of request to send (`Attributes`, `Parts`, `ComponentCount`).
+    ///
+    /// # Returns
+    /// A `Result` containing the server response as a `Value` on success, or an `Error` if the request fails.
     pub async fn send_request(
         &self,
         args: &Arguments,
@@ -226,7 +285,6 @@ impl RequestSender {
                 format!("Failed to parse response: {}", e),
             )
         })?;
-        // println!("Raw response string: {}", response_string);
         let response = serde_json::from_str(&response_string).map_err(|e| {
             println!("Raw response string: {}", response_string);
             Error::new(

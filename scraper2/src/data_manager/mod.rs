@@ -2,13 +2,16 @@ use anyhow::Result;
 use serde_json::Value;
 use tokio::{fs::File, io::AsyncWriteExt};
 
+#[derive(Default)]
 pub struct DataManager {}
 
 impl DataManager {
     pub fn new() -> Self {
-        Self {}
+        Self::default()
     }
+}
 
+impl DataManager {
     pub async fn save_to_disk(&self, data: Result<Vec<Result<Vec<Value>>>>) -> Result<()> {
         // 1. Flatten the structure by handling potential errors
         let cleaned_data: Vec<Vec<Value>> = match data {

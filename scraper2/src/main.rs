@@ -4,6 +4,8 @@ use scraper2::cli::Cli;
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
+    env_logger::init();
+
     info!("Starting batch manager");
     let args = Cli::prompt();
     let mut batch_manager = BatchManager::new(args, 100);

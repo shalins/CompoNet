@@ -15,6 +15,8 @@ use crate::data_manager::DataManager;
 use request::request_sender::{RequestSender, RequestType};
 use request::response_handler::ResponseHandler;
 
+mod types;
+
 pub struct BatchManager {
     args: Arc<RwLock<Arguments>>,
     batch_size: usize,
@@ -30,8 +32,12 @@ impl BatchManager {
         let request_sender = Arc::new(RequestSender::new(&*self.args.read().await));
         let response_handler = Arc::new(ResponseHandler::new());
 
-        let mut component_counter = ComponentCounter::new(self.args.clone(), self.batch_size);
-        let component_scraper = ComponentScraper::new(self.args.clone(), self.batch_size);
+        let component_scraper = ComponentScraper::new(
+            self.args.clone(),
+            self.batch_size,
+            request_sender.clone(),
+            response_handler.clone(),
+        );
 
         let data_manager = DataManager::new();
 
@@ -56,24 +62,21 @@ impl BatchManager {
 
         debug!("Attribute Buckets: {:?}", attribute_buckets);
 
-        let all_combinations = component_counter
-            .grab_bucket_combination_counts(
-                request_sender.clone(),
-                response_handler.clone(),
-                attribute_ids,
-                attribute_buckets,
-            )
-            .await?;
+        let mut component_counter = ComponentCounter::new(
+            self.args.clone(),
+            self.batch_size,
+            attribute_ids.clone(),
+            attribute_buckets,
+            request_sender.clone(),
+            response_handler.clone(),
+        )
+        .expect("Failed to create component counter");
+
+        let filter_combinations = component_counter.process().await?;
 
         println!("Finished grabbing bucket combination counts, grabbing components");
 
-        let partitions = component_scraper
-            .get_partitioned_combinations(all_combinations)
-            .await;
-        println!("Partitions: {:?}", partitions);
-        let data = component_scraper
-            .process_components(request_sender, response_handler, partitions)
-            .await;
+        let data = component_scraper.process(filter_combinations).await;
         data_manager.save_to_disk(data).await?;
 
         Ok(())
