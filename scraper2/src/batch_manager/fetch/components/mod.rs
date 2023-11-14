@@ -1,24 +1,23 @@
-use anyhow::Result;
-use serde_json::Value;
 use std::collections::VecDeque;
 use std::sync::Arc;
+
+use anyhow::Result;
+use serde_json::Value;
 use tokio::sync::RwLock;
 
-use self::processor::ComponentTaskData;
-
-use super::tasks::TaskProcessor;
-
-use crate::cli::Arguments;
+pub mod processor;
 
 use crate::batch_manager::request::request_sender::RequestSender;
 use crate::batch_manager::request::response_handler::ResponseHandler;
 use crate::batch_manager::types::{
     Filter, FilterCombinations, PartitionedCombination, PartitionedCombinations,
 };
-
+use crate::cli::Arguments;
 use crate::config::constants::OCTOPART_DEFAULT_RESULT_LIMIT;
 
-pub mod processor;
+use super::tasks::{TaskProcessor, TaskType};
+
+use processor::ComponentTaskData;
 
 pub struct ComponentScraper {
     args: Arc<RwLock<Arguments>>,
@@ -48,7 +47,8 @@ impl ComponentScraper {
     ) -> Result<Vec<Result<Vec<Value>>>> {
         let partitions = self.get_partitioned_combinations(filter_combinations).await;
         let partitions_to_process = self.get_partitions(partitions).await?;
-        self.process_tasks(partitions_to_process).await
+        self.process_tasks(TaskType::ComponentScrape, partitions_to_process)
+            .await
     }
 
     async fn get_partitions(

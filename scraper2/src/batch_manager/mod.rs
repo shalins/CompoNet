@@ -1,21 +1,21 @@
-use log::debug;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use anyhow::{anyhow, Result};
-
-use crate::cli::Arguments;
+use log::debug;
+use tokio::sync::RwLock;
 
 mod fetch;
+mod request;
+mod types;
+
+use crate::batch_manager::fetch::attributes::AttributeScraper;
+use crate::cli::Arguments;
+use crate::data_manager::DataManager;
+
 use fetch::components::ComponentScraper;
 use fetch::counts::ComponentCounter;
-
-mod request;
-use crate::data_manager::DataManager;
-use request::request_sender::{RequestSender, RequestType};
+use request::request_sender::RequestSender;
 use request::response_handler::ResponseHandler;
-
-mod types;
 
 pub struct BatchManager {
     args: Arc<RwLock<Arguments>>,
@@ -32,36 +32,22 @@ impl BatchManager {
         let request_sender = Arc::new(RequestSender::new(&*self.args.read().await));
         let response_handler = Arc::new(ResponseHandler::new());
 
-        let component_scraper = ComponentScraper::new(
-            self.args.clone(),
-            self.batch_size,
-            request_sender.clone(),
-            response_handler.clone(),
-        );
-
-        let data_manager = DataManager::new();
-
         // 1. Get the attribute ids from the request sender.
         let attribute_ids = request_sender
             .get_attribute_ids()
             .ok_or_else(|| anyhow!("Failed to get attribute ids"))?;
+        debug!("Attribute IDs: {:?}", attribute_ids);
 
-        // 2. Send a request to get the buckets for all the attributes.
-        let attribute_response = request_sender
-            .clone()
-            .send_request(&*self.args.read().await, RequestType::Attributes)
-            .await
-            .map_err(anyhow::Error::new)?;
-
-        // 3. Join the attribute ids with the buckets from the response.
-        let attribute_buckets = response_handler
-            .clone()
-            .extract_buckets(attribute_response, attribute_ids)
-            .await
-            .map_err(anyhow::Error::new)?;
-
+        // 2. Get the attribute buckets from the attribute scraper.
+        let attribute_scraper = AttributeScraper::new(
+            self.args.clone(),
+            request_sender.clone(),
+            response_handler.clone(),
+        );
+        let attribute_buckets = attribute_scraper.process(attribute_ids).await?;
         debug!("Attribute Buckets: {:?}", attribute_buckets);
 
+        // 3. Get the filter combination & component counts from the component counter.
         let mut component_counter = ComponentCounter::new(
             self.args.clone(),
             self.batch_size,
@@ -71,13 +57,23 @@ impl BatchManager {
             response_handler.clone(),
         )
         .expect("Failed to create component counter");
+        let component_counts = component_counter.process().await?;
+        debug!("Component Counts: {:?}", component_counts);
 
-        let filter_combinations = component_counter.process().await?;
+        // 4. Get the components from the component scraper.
+        let component_scraper = ComponentScraper::new(
+            self.args.clone(),
+            self.batch_size,
+            request_sender.clone(),
+            response_handler.clone(),
+        );
+        let components = component_scraper.process(component_counts).await;
+        debug!("Components: {:?}", components);
 
-        println!("Finished grabbing bucket combination counts, grabbing components");
-
-        let data = component_scraper.process(filter_combinations).await;
-        data_manager.save_to_disk(data).await?;
+        // 5. Save the components to disk.
+        let data_manager = DataManager::new(self.args.clone());
+        data_manager.save_to_disk(components).await?;
+        debug!("Saved components to disk");
 
         Ok(())
     }

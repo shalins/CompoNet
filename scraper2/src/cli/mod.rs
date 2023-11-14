@@ -1,8 +1,8 @@
-use crate::config::constants::DEFAULT_USER_AGENT;
-
 use clap::Parser;
 use dialoguer::Input;
 use log::debug;
+
+use crate::config::constants::DEFAULT_USER_AGENT;
 
 #[derive(Parser, Debug, Default)]
 pub struct Arguments {

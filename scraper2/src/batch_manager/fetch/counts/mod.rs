@@ -1,14 +1,15 @@
-use anyhow::{anyhow, Result};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::vec;
+
+use anyhow::{anyhow, Result};
 use tokio::sync::RwLock;
 
-use self::metadata::AttributeBucketMetadata;
-use self::processor::AttributeTaskData;
+pub mod processor;
 
-use super::tasks::TaskProcessor;
+mod metadata;
 
+use crate::batch_manager::fetch::tasks::TaskType;
 use crate::batch_manager::request::request_sender::RequestSender;
 use crate::batch_manager::request::response_handler::ResponseHandler;
 use crate::batch_manager::types::{
@@ -16,8 +17,10 @@ use crate::batch_manager::types::{
 };
 use crate::cli::Arguments;
 
-mod metadata;
-pub mod processor;
+use super::tasks::TaskProcessor;
+
+use metadata::AttributeBucketMetadata;
+use processor::AttributeTaskData;
 
 pub struct ComponentCounter {
     args: Arc<RwLock<Arguments>>,
@@ -111,7 +114,8 @@ impl ComponentCounter {
                     })
                     .collect();
 
-                self.process_tasks(task_data_queue).await
+                self.process_tasks(TaskType::ComponentCount, task_data_queue)
+                    .await
             }
             _ => Ok(Vec::new()),
         };

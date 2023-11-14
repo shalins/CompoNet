@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
+use serde_json::{Error, Value};
+
 use crate::batch_manager::types::{
     AttributeBuckets, Bucket, FilterCombination, FilterCombinations,
 };
-use serde_json::{Error, Value};
-use std::collections::HashMap;
 
 /// Handles the extraction of data from JSON responses.
 #[derive(Default)]

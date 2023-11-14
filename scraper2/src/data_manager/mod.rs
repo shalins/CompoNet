@@ -1,13 +1,19 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use serde_json::Value;
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::{fs::File, io::AsyncWriteExt, sync::RwLock};
+
+use crate::{cli::Arguments, config::constants::DEFAULT_FILENAME};
 
 #[derive(Default)]
-pub struct DataManager {}
+pub struct DataManager {
+    args: Arc<RwLock<Arguments>>,
+}
 
 impl DataManager {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(args: Arc<RwLock<Arguments>>) -> Self {
+        Self { args }
     }
 }
 
@@ -27,7 +33,17 @@ impl DataManager {
             "data": cleaned_data
         });
 
-        let mut file = File::create("output.json").await?;
+        // 3. Get the filename from the arguments
+        let filename = &*self
+            .args
+            .clone()
+            .read()
+            .await
+            .category_name
+            .clone()
+            .unwrap_or(DEFAULT_FILENAME.to_string());
+
+        let mut file = File::create(format!("{}.json", filename)).await?;
         file.write_all(serde_json::to_string_pretty(&file_content)?.as_bytes())
             .await?;
 

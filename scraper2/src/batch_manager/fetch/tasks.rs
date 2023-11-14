@@ -6,14 +6,20 @@ use tokio::{sync::RwLock, task::JoinHandle};
 
 use crate::cli::Arguments;
 
+#[derive(Debug, Clone)]
+pub enum TaskType {
+    ComponentCount,
+    ComponentScrape,
+}
+
 /// A trait defining the processing behavior for tasks in an asynchronous context.
 ///
 /// This trait is designed to be implemented by types that process batches of tasks asynchronously.
 /// It provides a generic interface for creating and processing tasks.
 #[async_trait]
 pub trait TaskProcessor {
-    /// The type of individual task data.
-    type TaskType: Clone + Sync + Send;
+    /// The individual task data.
+    type TaskData: Clone + Sync + Send;
     /// The type of result produced by each task.
     type TaskResult: Sync + Send;
     /// The type of error that can occur while processing a task.
@@ -28,19 +34,21 @@ pub trait TaskProcessor {
     /// A `JoinHandle` that resolves to the result of the task.
     fn create_task(
         &self,
-        task_data: Self::TaskType,
+        task_data: Self::TaskData,
     ) -> JoinHandle<Result<Self::TaskResult, Self::TaskError>>;
 
     /// Processes a queue of tasks asynchronously.
     ///
     /// # Arguments
+    /// * `task_type` - The type of task being processed.
     /// * `task_data_queue` - A queue of task data elements to be processed.
     ///
     /// # Returns
     /// A vector of results from the processed tasks.
     async fn process_tasks(
         &self,
-        task_data_queue: VecDeque<Self::TaskType>,
+        task_type: TaskType,
+        task_data_queue: VecDeque<Self::TaskData>,
     ) -> Result<Vec<Result<Self::TaskResult, Self::TaskError>>>;
 }
 
@@ -85,6 +93,7 @@ where
 /// It also handles task failures by prompting for user intervention and retrying failed tasks.
 ///
 /// # Arguments
+/// * `task_type` - The type of task being processed.
 /// * `processor` - The task processor implementing the `TaskProcessor` trait.
 /// * `task_data_queue` - A queue of task data to be processed.
 /// * `batch_size` - The maximum number of tasks to process in a single batch.
@@ -97,7 +106,8 @@ where
 /// Returns an error if any task in the batch fails after retrying.
 pub async fn process_tasks_helper<T>(
     processor: &T,
-    task_data_queue: VecDeque<T::TaskType>,
+    task_type: TaskType,
+    task_data_queue: VecDeque<T::TaskData>,
     batch_size: usize,
     args: Arc<RwLock<Arguments>>,
 ) -> Result<Vec<Result<T::TaskResult, T::TaskError>>>
@@ -138,6 +148,11 @@ where
                 .collect();
 
             if !failed_tasks.is_empty() {
+                eprint!(
+                    "{} failed tasks of type: {:?}",
+                    failed_tasks.len(),
+                    task_type
+                );
                 args.write().await.prompt_user_for_new_px_key();
                 task_data_queue.extend(failed_tasks);
             } else {

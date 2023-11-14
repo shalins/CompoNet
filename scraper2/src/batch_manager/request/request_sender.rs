@@ -3,7 +3,6 @@ use std::io::Error;
 use std::time::Duration;
 
 use reqwest::{header, Client};
-
 use serde_json::{json, Map, Value};
 
 use crate::cli::Arguments;

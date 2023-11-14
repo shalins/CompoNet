@@ -1,14 +1,15 @@
-use anyhow::Result;
-use async_trait::async_trait;
 use std::collections::{HashMap, VecDeque};
 use std::vec;
+
+use anyhow::Result;
+use async_trait::async_trait;
 use tokio::task::JoinHandle;
 
-use super::ComponentCounter;
-
-use crate::batch_manager::fetch::tasks::{process_tasks_helper, TaskProcessor};
+use crate::batch_manager::fetch::tasks::{process_tasks_helper, TaskProcessor, TaskType};
 use crate::batch_manager::request::request_sender::RequestType;
 use crate::batch_manager::types::{Bucket, FilterCombinations};
+
+use super::ComponentCounter;
 
 #[derive(Debug, Clone)]
 pub struct AttributeTaskData {
@@ -19,13 +20,13 @@ pub struct AttributeTaskData {
 
 #[async_trait]
 impl TaskProcessor for ComponentCounter {
-    type TaskType = AttributeTaskData;
+    type TaskData = AttributeTaskData;
     type TaskResult = FilterCombinations;
     type TaskError = anyhow::Error;
 
     fn create_task(
         &self,
-        task_data: Self::TaskType,
+        task_data: Self::TaskData,
     ) -> JoinHandle<Result<Self::TaskResult, Self::TaskError>> {
         let mut filters = HashMap::new();
         for (key, bucket) in task_data
@@ -89,8 +90,16 @@ impl TaskProcessor for ComponentCounter {
 
     async fn process_tasks(
         &self,
-        task_data_queue: VecDeque<Self::TaskType>,
+        task_type: TaskType,
+        task_data_queue: VecDeque<Self::TaskData>,
     ) -> Result<Vec<Result<Self::TaskResult>>> {
-        process_tasks_helper(self, task_data_queue, self.batch_size, self.args.clone()).await
+        process_tasks_helper(
+            self,
+            task_type,
+            task_data_queue,
+            self.batch_size,
+            self.args.clone(),
+        )
+        .await
     }
 }
