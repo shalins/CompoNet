@@ -2,12 +2,18 @@ use std::{collections::VecDeque, sync::Arc};
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use indicatif::ProgressBar;
+use log::debug;
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use crate::cli::Arguments;
+use crate::{
+    cli::Arguments,
+    config::prompts::{print_error_message, LAZY_PROGRESS_STYLE},
+};
 
 #[derive(Debug, Clone)]
-pub enum TaskType {
+pub(crate) enum TaskType {
+    AttributeScrape,
     ComponentCount,
     ComponentScrape,
 }
@@ -17,7 +23,7 @@ pub enum TaskType {
 /// This trait is designed to be implemented by types that process batches of tasks asynchronously.
 /// It provides a generic interface for creating and processing tasks.
 #[async_trait]
-pub trait TaskProcessor {
+pub(crate) trait TaskProcessor {
     /// The individual task data.
     type TaskData: Clone + Sync + Send;
     /// The type of result produced by each task.
@@ -64,7 +70,7 @@ pub trait TaskProcessor {
 ///
 /// # Errors
 /// If any task fails, an error is returned in place of its result.
-pub async fn join_current_tasks<T, E>(
+pub(crate) async fn join_current_tasks<T, E>(
     current_tasks: Vec<(JoinHandle<Result<T, E>>, impl Send)>,
 ) -> Vec<Result<T, E>>
 where
@@ -104,7 +110,7 @@ where
 ///
 /// # Errors
 /// Returns an error if any task in the batch fails after retrying.
-pub async fn process_tasks_helper<T>(
+pub(crate) async fn process_tasks_helper<T>(
     processor: &T,
     task_type: TaskType,
     task_data_queue: VecDeque<T::TaskData>,
@@ -118,6 +124,10 @@ where
     let mut tasks = Vec::new();
     let mut task_data_queue = task_data_queue;
 
+    let total_tasks = task_data_queue.len();
+    let progress_bar = ProgressBar::new(total_tasks as u64);
+    progress_bar.set_style(LAZY_PROGRESS_STYLE.clone());
+
     while !task_data_queue.is_empty() {
         if let Some(task_data) = task_data_queue.pop_front() {
             let task = processor.create_task(task_data.clone());
@@ -125,7 +135,9 @@ where
         }
 
         if tasks.len() >= batch_size || task_data_queue.is_empty() {
-            println!("Tasks left: {}", task_data_queue.len());
+            debug!("Tasks left: {}", task_data_queue.len());
+            progress_bar.set_position((total_tasks - task_data_queue.len()) as u64);
+
             let associated_task_data: Vec<_> = tasks
                 .iter()
                 .map(|(_, task_data)| task_data.clone())
@@ -148,13 +160,9 @@ where
                 .collect();
 
             if !failed_tasks.is_empty() {
-                eprint!(
-                    "{} failed tasks of type: {:?}",
-                    failed_tasks.len(),
-                    task_type
-                );
+                print_error_message(&task_type, failed_tasks.len());
                 args.write().await.prompt_user_for_new_px_key();
-                task_data_queue.extend(failed_tasks);
+                task_data_queue.extend(failed_tasks.into_iter()); // FIX THIS
             } else {
                 results.extend(
                     batch_results_with_task_data
@@ -165,5 +173,6 @@ where
         }
     }
 
+    progress_bar.finish_with_message("Processing complete");
     Ok(results)
 }

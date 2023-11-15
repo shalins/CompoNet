@@ -3,9 +3,10 @@ use std::sync::Arc;
 use std::vec;
 
 use anyhow::{anyhow, Result};
+use log::debug;
 use tokio::sync::RwLock;
 
-pub mod processor;
+pub(crate) mod processor;
 
 mod metadata;
 
@@ -16,13 +17,14 @@ use crate::batch_manager::types::{
     AttributeBuckets, Bucket, BucketPair, FilterCombination, FilterCombinations,
 };
 use crate::cli::Arguments;
+use crate::config::prompts::print_info_message;
 
 use super::tasks::TaskProcessor;
 
 use metadata::AttributeBucketMetadata;
 use processor::AttributeTaskData;
 
-pub struct ComponentCounter {
+pub(crate) struct ComponentCounter {
     args: Arc<RwLock<Arguments>>,
     batch_size: usize,
     attribute_bucket_metadata: AttributeBucketMetadata,
@@ -31,7 +33,7 @@ pub struct ComponentCounter {
 }
 
 impl ComponentCounter {
-    pub fn new(
+    pub(crate) fn new(
         args: Arc<RwLock<Arguments>>,
         batch_size: usize,
         attribute_ids: Vec<String>,
@@ -51,7 +53,7 @@ impl ComponentCounter {
         })
     }
 
-    pub async fn process(&mut self) -> Result<FilterCombinations, anyhow::Error> {
+    pub(crate) async fn process(&mut self) -> Result<FilterCombinations, anyhow::Error> {
         let results = match self
             .attribute_bucket_metadata
             .attribute_buckets
@@ -87,6 +89,7 @@ impl ComponentCounter {
                 Ok(vec![Ok(filter_combinations)])
             }
             2 | 3 => {
+                print_info_message("Counting component batches...", false);
                 let buckets_to_process = self.get_bucket_pairs().await?;
 
                 let task_data_queue: VecDeque<AttributeTaskData> = buckets_to_process
@@ -135,10 +138,9 @@ impl ComponentCounter {
             }
         }
 
-        println!("All Combinations:");
         for combination in &all_combinations.combinations {
-            println!(
-                "  Combination: {:?}, Count: {}",
+            debug!(
+                "Combination: {:?}, Count: {}",
                 combination.combination, combination.count
             );
         }

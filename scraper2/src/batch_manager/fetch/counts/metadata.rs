@@ -2,14 +2,17 @@ use anyhow::{anyhow, Result};
 
 use crate::batch_manager::types::AttributeBuckets;
 
-pub struct AttributeBucketMetadata {
-    pub attribute_buckets: AttributeBuckets,
-    pub last_attribute_bucket_key: String,
-    pub second_last_attribute_bucket_key: Option<String>,
+pub(crate) struct AttributeBucketMetadata {
+    pub(crate) attribute_buckets: AttributeBuckets,
+    pub(crate) last_attribute_bucket_key: String,
+    pub(crate) second_last_attribute_bucket_key: Option<String>,
 }
 
 impl AttributeBucketMetadata {
-    pub fn new(attribute_ids: Vec<String>, attribute_buckets: AttributeBuckets) -> Result<Self> {
+    pub(crate) fn new(
+        attribute_ids: Vec<String>,
+        attribute_buckets: AttributeBuckets,
+    ) -> Result<Self> {
         let last_attribute_bucket_key = attribute_ids
             .last()
             .cloned()

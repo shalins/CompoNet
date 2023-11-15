@@ -12,10 +12,10 @@ use crate::batch_manager::types::{Bucket, FilterCombinations};
 use super::ComponentCounter;
 
 #[derive(Debug, Clone)]
-pub struct AttributeTaskData {
-    pub last_attribute_bucket_key: String,
-    pub attribute_keys: Vec<String>,
-    pub attribute_values: Vec<Bucket>,
+pub(crate) struct AttributeTaskData {
+    pub(crate) last_attribute_bucket_key: String,
+    pub(crate) attribute_keys: Vec<String>,
+    pub(crate) attribute_values: Vec<Bucket>,
 }
 
 #[async_trait]

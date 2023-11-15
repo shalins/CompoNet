@@ -1,7 +1,7 @@
 use phf::phf_map;
 
 // https://octopart.com/api/v4/categories
-pub static CATEGORIES_MAP: phf::Map<&'static str, &'static str> = phf_map! {
+pub(crate) static CATEGORIES_MAP: phf::Map<&'static str, &'static str> = phf_map! {
     "Passive Components" => "4165",
     "Capacitors" => "4166",
     "Aluminum Electrolytic Capacitors" => "6331",
@@ -21,7 +21,7 @@ pub static CATEGORIES_MAP: phf::Map<&'static str, &'static str> = phf_map! {
 };
 
 // https://octopart.com/api/v4/categories#attributes
-pub static ATTRIBUTES_MAP: phf::Map<&'static str, &'static str> = phf_map! {
+pub(crate) static ATTRIBUTES_MAP: phf::Map<&'static str, &'static str> = phf_map! {
     "Capacitance" => "capacitance",
     "Case/Package" => "case_package",
     "Contact Plating" => "contactplating",

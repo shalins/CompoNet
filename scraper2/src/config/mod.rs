@@ -1,3 +1,4 @@
-pub mod categories;
-pub mod constants;
-pub mod queries;
+pub(crate) mod categories;
+pub(crate) mod constants;
+pub(crate) mod prompts;
+pub(crate) mod queries;

@@ -5,7 +5,7 @@ use anyhow::Result;
 use serde_json::Value;
 use tokio::sync::RwLock;
 
-pub mod processor;
+pub(crate) mod processor;
 
 use crate::batch_manager::request::request_sender::RequestSender;
 use crate::batch_manager::request::response_handler::ResponseHandler;
@@ -14,12 +14,13 @@ use crate::batch_manager::types::{
 };
 use crate::cli::Arguments;
 use crate::config::constants::OCTOPART_DEFAULT_RESULT_LIMIT;
+use crate::config::prompts::print_info_message;
 
 use super::tasks::{TaskProcessor, TaskType};
 
 use processor::ComponentTaskData;
 
-pub struct ComponentScraper {
+pub(crate) struct ComponentScraper {
     args: Arc<RwLock<Arguments>>,
     batch_size: usize,
     request_sender: Arc<RequestSender>,
@@ -27,7 +28,7 @@ pub struct ComponentScraper {
 }
 
 impl ComponentScraper {
-    pub fn new(
+    pub(crate) fn new(
         args: Arc<RwLock<Arguments>>,
         batch_size: usize,
         request_sender: Arc<RequestSender>,
@@ -41,10 +42,11 @@ impl ComponentScraper {
         }
     }
 
-    pub async fn process(
+    pub(crate) async fn process(
         &self,
         filter_combinations: FilterCombinations,
     ) -> Result<Vec<Result<Vec<Value>>>> {
+        print_info_message("Scraping component batches...", false);
         let partitions = self.get_partitioned_combinations(filter_combinations).await;
         let partitions_to_process = self.get_partitions(partitions).await?;
         self.process_tasks(TaskType::ComponentScrape, partitions_to_process)

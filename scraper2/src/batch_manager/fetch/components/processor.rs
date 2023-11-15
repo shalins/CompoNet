@@ -14,8 +14,8 @@ use crate::batch_manager::{
 };
 
 #[derive(Clone, Debug)]
-pub struct ComponentTaskData {
-    pub partition: PartitionedCombination,
+pub(crate) struct ComponentTaskData {
+    pub(crate) partition: PartitionedCombination,
 }
 
 #[async_trait]

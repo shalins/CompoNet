@@ -1,2 +1,2 @@
-pub mod request_sender;
-pub mod response_handler;
+pub(crate) mod request_sender;
+pub(crate) mod response_handler;

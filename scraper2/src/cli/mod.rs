@@ -1,71 +1,89 @@
 use clap::Parser;
-use dialoguer::Input;
 use log::debug;
 
-use crate::config::constants::DEFAULT_USER_AGENT;
+use crate::config::{
+    constants::DEFAULT_USER_AGENT,
+    prompts::{
+        prompt_for_input, ATTRIBUTE_NAME_COLOR, ATTRIBUTE_NAME_PROMPT, CATEGORY_NAME_COLOR,
+        CATEGORY_NAME_PROMPT, PX_KEY_COLOR, PX_KEY_PROMPT, USER_AGENT_COLOR, USER_AGENT_PROMPT,
+    },
+};
+
+#[derive(Debug)]
+pub enum ArgumentType {
+    Px,
+    UserAgent,
+    CategoryName,
+    AttributeNames,
+}
 
 #[derive(Parser, Debug, Default)]
 pub struct Arguments {
-    pub px: Option<String>,
-    pub user_agent: Option<String>,
-    pub category_name: Option<String>,
-    pub attribute_names: Option<Vec<String>>,
+    pub(crate) px: Option<String>,
+    pub(crate) user_agent: Option<String>,
+    pub(crate) category_name: Option<String>,
+    pub(crate) attribute_names: Option<Vec<String>>,
 }
 
 impl Arguments {
     fn prompt_for_missing_fields(&mut self) {
+        println!();
         if self.px.is_none() {
-            self.px = Some(
-                Input::new()
-                    .with_prompt("Enter PerimeterX key")
-                    .interact_text()
-                    .unwrap(),
-            );
+            let input = prompt_for_input(ArgumentType::Px, PX_KEY_PROMPT, PX_KEY_COLOR, None);
+            self.px = Some(input);
             debug!("PX: {:?}", self.px);
         }
+
         if self.user_agent.is_none() {
-            self.user_agent = Some(
-                Input::new()
-                    .with_prompt("Enter User Agent")
-                    .default(DEFAULT_USER_AGENT.to_string())
-                    .interact_text()
-                    .unwrap(),
+            let input = prompt_for_input(
+                ArgumentType::UserAgent,
+                USER_AGENT_PROMPT,
+                USER_AGENT_COLOR,
+                Some(DEFAULT_USER_AGENT),
             );
+            self.user_agent = Some(input);
             debug!("User Agent: {:?}", self.user_agent);
         }
+
         if self.category_name.is_none() {
-            self.category_name = Some(
-                Input::new()
-                    .with_prompt("Enter Category Name")
-                    .interact_text()
-                    .unwrap(),
+            let input = prompt_for_input(
+                ArgumentType::CategoryName,
+                CATEGORY_NAME_PROMPT,
+                CATEGORY_NAME_COLOR,
+                None,
             );
+            self.category_name = Some(input);
             debug!("Category Name: {:?}", self.category_name);
         }
+
         if self.attribute_names.is_none() {
-            let mut attributes = Vec::new();
-            loop {
-                let attribute: String = Input::new()
-                    .with_prompt("Enter Attribute Name (enter 'done' when finished)")
-                    .interact_text()
-                    .unwrap();
-                if attribute == "done" {
-                    break;
-                }
-                attributes.push(attribute);
-            }
+            let attributes = self.prompt_for_attribute_names();
             self.attribute_names = Some(attributes);
             debug!("Attribute Names: {:?}", self.attribute_names);
         }
     }
 
-    pub fn prompt_user_for_new_px_key(&mut self) {
-        self.px = Some(
-            Input::new()
-                .with_prompt("Enter a new PerimeterX key")
-                .interact_text()
-                .unwrap(),
-        );
+    pub(crate) fn prompt_user_for_new_px_key(&mut self) {
+        let input = prompt_for_input(ArgumentType::Px, PX_KEY_PROMPT, PX_KEY_COLOR, None);
+        self.px = Some(input);
+        debug!("New PX: {:?}", self.px);
+    }
+
+    fn prompt_for_attribute_names(&self) -> Vec<String> {
+        let mut attributes = Vec::new();
+        loop {
+            let attribute = prompt_for_input(
+                ArgumentType::AttributeNames,
+                ATTRIBUTE_NAME_PROMPT,
+                ATTRIBUTE_NAME_COLOR,
+                None,
+            );
+            if attribute.eq_ignore_ascii_case("done") {
+                break;
+            }
+            attributes.push(attribute);
+        }
+        attributes
     }
 }
 

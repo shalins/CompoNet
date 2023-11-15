@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::Error;
 use std::time::Duration;
 
+use log::debug;
 use reqwest::{header, Client};
 use serde_json::{json, Map, Value};
 
@@ -11,7 +12,7 @@ use crate::config::constants::ENDPOINT;
 use crate::config::queries::{ATTRIBUTE_BUCKET_QUERY, PART_SEARCH_QUERY};
 
 /// Enumerates different types of requests that can be handled.
-pub enum RequestType {
+pub(crate) enum RequestType {
     /// Request for attributes.
     Attributes,
     /// Request for parts, with filters and pagination options.
@@ -28,17 +29,17 @@ pub enum RequestType {
 }
 
 /// Manages the sending of different types of requests to a remote endpoint.
-pub struct RequestSender {
+pub(crate) struct RequestSender {
     client: Client,
-    pub category_name: Option<String>,
+    pub(crate) category_name: Option<String>,
     category_id: Option<String>,
     attribute_ids: Option<Vec<String>>,
-    pub attribute_names: Option<Vec<String>>,
+    pub(crate) attribute_names: Option<Vec<String>>,
 }
 
 impl RequestSender {
     /// Creates a new instance of `RequestSender` with initial configuration from the provided arguments.
-    pub fn new(args: &Arguments) -> Self {
+    pub(crate) fn new(args: &Arguments) -> Self {
         let client = Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .connection_verbose(true)
@@ -64,21 +65,21 @@ impl RequestSender {
     // Getter methods
 
     #[allow(dead_code)]
-    pub fn get_category_name(&self) -> Option<&String> {
+    pub(crate) fn get_category_name(&self) -> Option<&String> {
         self.category_name.as_ref()
     }
 
     #[allow(dead_code)]
-    pub fn get_attribute_names(&self) -> Option<&Vec<String>> {
+    pub(crate) fn get_attribute_names(&self) -> Option<&Vec<String>> {
         self.attribute_names.as_ref()
     }
 
     #[allow(dead_code)]
-    pub fn get_category_id(&self) -> Option<&String> {
+    pub(crate) fn get_category_id(&self) -> Option<&String> {
         self.category_id.as_ref()
     }
 
-    pub fn get_attribute_ids(&self) -> Option<&Vec<String>> {
+    pub(crate) fn get_attribute_ids(&self) -> Option<&Vec<String>> {
         self.attribute_ids.as_ref()
     }
 
@@ -155,7 +156,7 @@ impl RequestSender {
     ///
     /// # Returns
     /// A `Value` representing the JSON payload for the request.
-    pub fn get_component_count_payload(
+    pub(crate) fn get_component_count_payload(
         &self,
         attribute_names: Option<Vec<String>>,
         filters: Option<HashMap<String, Vec<String>>>,
@@ -197,7 +198,6 @@ impl RequestSender {
             },
             "query": ATTRIBUTE_BUCKET_QUERY.to_string(),
         });
-        println!("BODY HEADER: {:?}", json_data);
         json_data
     }
 
@@ -245,13 +245,12 @@ impl RequestSender {
     ///
     /// # Returns
     /// A `Result` containing the server response as a `Value` on success, or an `Error` if the request fails.
-    pub async fn send_request(
+    pub(crate) async fn send_request(
         &self,
         args: &Arguments,
         request_type: RequestType,
     ) -> Result<Value, Error> {
         let headers = self.parse_headers(args)?;
-        // println!("Headers: {:?}", headers);
         let body = match request_type {
             RequestType::Attributes => self.get_attributes_payload(),
             RequestType::Parts {
@@ -285,7 +284,7 @@ impl RequestSender {
             )
         })?;
         let response = serde_json::from_str(&response_string).map_err(|e| {
-            println!("Raw response string: {}", response_string);
+            debug!("Raw response string: {}", response_string);
             Error::new(
                 std::io::ErrorKind::Other,
                 format!("Failed to deserialize JSON: {}", e),

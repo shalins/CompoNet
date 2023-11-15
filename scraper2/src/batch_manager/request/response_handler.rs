@@ -8,11 +8,11 @@ use crate::batch_manager::types::{
 
 /// Handles the extraction of data from JSON responses.
 #[derive(Default)]
-pub struct ResponseHandler();
+pub(crate) struct ResponseHandler();
 
 impl ResponseHandler {
     /// Constructs a new `ResponseHandler`.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::default()
     }
 
@@ -24,7 +24,7 @@ impl ResponseHandler {
     ///
     /// # Returns
     /// A `Result` containing `AttributeBuckets` on success or an `Error` if extraction fails.
-    pub async fn extract_buckets(
+    pub(crate) async fn extract_buckets(
         &self,
         json: Value,
         attribute_ids: &[String],
@@ -77,7 +77,7 @@ impl ResponseHandler {
     ///
     /// # Returns
     /// A `Result` containing `FilterCombinations` on success or an `Error` if extraction fails.
-    pub async fn extract_filter_combinations(
+    pub(crate) async fn extract_filter_combinations(
         &self,
         json: Value,
         attribute_ids: HashMap<String, String>,
@@ -121,16 +121,16 @@ impl ResponseHandler {
     ///
     /// # Returns
     /// A `Result` containing a `Vec<Value>` representing components on success, or an `anyhow::Error` if no results are found.
-    pub async fn extract_components(&self, json: Value) -> Result<Vec<Value>, anyhow::Error> {
+    pub(crate) async fn extract_components(
+        &self,
+        json: Value,
+    ) -> Result<Vec<Value>, anyhow::Error> {
         match json
             .pointer("/data/search/results")
             .and_then(|v| v.as_array())
         {
             Some(results) => Ok(results.clone()),
-            None => {
-                println!("JSON: {:?}", json);
-                Err(anyhow::Error::msg("No results found"))
-            }
+            None => Err(anyhow::Error::msg("No results found")),
         }
     }
 }

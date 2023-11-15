@@ -1,48 +1,48 @@
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
-pub struct Filter {
-    pub display_id: String,
-    pub bucket_value: String,
+pub(crate) struct Filter {
+    pub(crate) display_id: String,
+    pub(crate) bucket_value: String,
 }
 
 #[derive(Clone, Debug)]
-pub struct PartitionedCombination {
-    pub filters: Vec<Filter>,
-    pub start: usize,
-    pub end: usize,
+pub(crate) struct PartitionedCombination {
+    pub(crate) filters: Vec<Filter>,
+    pub(crate) start: usize,
+    pub(crate) end: usize,
 }
 
 #[derive(Clone, Debug)]
-pub struct PartitionedCombinations {
-    pub partitions: Vec<PartitionedCombination>,
+pub(crate) struct PartitionedCombinations {
+    pub(crate) partitions: Vec<PartitionedCombination>,
 }
 
 #[derive(Clone, Debug)]
-pub struct BucketPair {
-    pub first: Option<(String, Bucket)>,
-    pub second: (String, Bucket),
+pub(crate) struct BucketPair {
+    pub(crate) first: Option<(String, Bucket)>,
+    pub(crate) second: (String, Bucket),
 }
 
 #[derive(Debug, Clone)]
-pub struct Bucket {
-    pub count: usize,
-    pub display_value: String,
-    pub float_value: Option<String>,
+pub(crate) struct Bucket {
+    pub(crate) count: usize,
+    pub(crate) display_value: String,
+    pub(crate) float_value: Option<String>,
 }
 
 #[derive(Debug)]
-pub struct AttributeBuckets {
-    pub buckets: HashMap<String, Vec<Bucket>>,
+pub(crate) struct AttributeBuckets {
+    pub(crate) buckets: HashMap<String, Vec<Bucket>>,
 }
 
 #[derive(Debug, Default)]
-pub struct FilterCombination {
-    pub combination: HashMap<String, String>,
-    pub count: usize,
+pub(crate) struct FilterCombination {
+    pub(crate) combination: HashMap<String, String>,
+    pub(crate) count: usize,
 }
 
 #[derive(Debug, Default)]
-pub struct FilterCombinations {
-    pub combinations: Vec<FilterCombination>,
+pub(crate) struct FilterCombinations {
+    pub(crate) combinations: Vec<FilterCombination>,
 }

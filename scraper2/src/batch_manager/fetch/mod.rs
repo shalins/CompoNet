@@ -1,4 +1,4 @@
-pub mod attributes;
-pub mod components;
-pub mod counts;
-pub mod tasks;
+pub(crate) mod attributes;
+pub(crate) mod components;
+pub(crate) mod counts;
+pub(crate) mod tasks;

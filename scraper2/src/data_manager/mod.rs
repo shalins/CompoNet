@@ -4,29 +4,26 @@ use anyhow::Result;
 use serde_json::Value;
 use tokio::{fs::File, io::AsyncWriteExt, sync::RwLock};
 
-use crate::{cli::Arguments, config::constants::DEFAULT_FILENAME};
+use crate::{
+    cli::Arguments,
+    config::{constants::DEFAULT_FILENAME, prompts::print_info_message},
+};
 
 #[derive(Default)]
-pub struct DataManager {
+pub(crate) struct DataManager {
     args: Arc<RwLock<Arguments>>,
 }
 
 impl DataManager {
-    pub fn new(args: Arc<RwLock<Arguments>>) -> Self {
+    pub(crate) fn new(args: Arc<RwLock<Arguments>>) -> Self {
         Self { args }
     }
 }
 
 impl DataManager {
-    pub async fn save_to_disk(&self, data: Result<Vec<Result<Vec<Value>>>>) -> Result<()> {
+    pub(crate) async fn save_to_disk(&self, data: Result<Vec<Result<Vec<Value>>>>) -> Result<()> {
         // 1. Flatten the structure by handling potential errors
-        let cleaned_data: Vec<Vec<Value>> = match data {
-            Ok(inner_vec) => inner_vec.into_iter().filter_map(Result::ok).collect(),
-            Err(_) => {
-                eprintln!("Error in the outer result");
-                vec![]
-            }
-        };
+        let cleaned_data: Vec<Vec<Value>> = data?.into_iter().filter_map(Result::ok).collect();
 
         // 2. Serialize and write to a file
         let file_content = serde_json::json!({
@@ -43,10 +40,13 @@ impl DataManager {
             .clone()
             .unwrap_or(DEFAULT_FILENAME.to_string());
 
+        // 4. Write to disk
+        print_info_message(&format!("Writing {}.json to disk...", filename), false);
         let mut file = File::create(format!("{}.json", filename)).await?;
         file.write_all(serde_json::to_string_pretty(&file_content)?.as_bytes())
             .await?;
 
+        print_info_message("Done!", true);
         Ok(())
     }
 }
