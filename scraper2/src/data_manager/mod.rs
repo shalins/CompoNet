@@ -41,6 +41,7 @@ impl DataManager {
             .unwrap_or(DEFAULT_FILENAME.to_string());
 
         // 4. Write to disk
+        println!();
         print_info_message(&format!("Writing {}.json to disk...", filename), false);
         let mut file = File::create(format!("{}.json", filename)).await?;
         file.write_all(serde_json::to_string_pretty(&file_content)?.as_bytes())

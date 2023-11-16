@@ -10,10 +10,11 @@ pub(crate) mod processor;
 use crate::batch_manager::request::request_sender::RequestSender;
 use crate::batch_manager::request::response_handler::ResponseHandler;
 use crate::batch_manager::types::{
-    Filter, FilterCombinations, PartitionedCombination, PartitionedCombinations,
+    AttributeBucket, AttributeBucketCombinations, ComponentCount, ComponentCounts,
 };
+
 use crate::cli::Arguments;
-use crate::config::constants::OCTOPART_DEFAULT_RESULT_LIMIT;
+use crate::config::constants::OCTOPART_COMPONENT_RESULT_LIMIT;
 use crate::config::prompts::print_info_message;
 
 use super::tasks::{TaskProcessor, TaskType};
@@ -44,7 +45,7 @@ impl ComponentScraper {
 
     pub(crate) async fn process(
         &self,
-        filter_combinations: FilterCombinations,
+        filter_combinations: AttributeBucketCombinations,
     ) -> Result<Vec<Result<Vec<Value>>>> {
         print_info_message("Scraping component batches...", false);
         let partitions = self.get_partitioned_combinations(filter_combinations).await;
@@ -55,14 +56,14 @@ impl ComponentScraper {
 
     async fn get_partitions(
         &self,
-        partitioned_combinations: PartitionedCombinations,
+        partitioned_combinations: ComponentCounts,
     ) -> Result<VecDeque<ComponentTaskData>, anyhow::Error> {
         let buckets_to_process = partitioned_combinations
-            .partitions
+            .component_counts
             .iter()
             .cloned()
             .map(|partition| ComponentTaskData {
-                partition: partition.clone(),
+                component_count: partition.clone(),
             })
             .collect::<VecDeque<_>>();
         Ok(buckets_to_process)
@@ -70,33 +71,36 @@ impl ComponentScraper {
 
     async fn get_partitioned_combinations(
         &self,
-        filter_combinations: FilterCombinations,
-    ) -> PartitionedCombinations {
+        filter_combinations: AttributeBucketCombinations,
+    ) -> ComponentCounts {
         let mut partitions = Vec::new();
 
         for combination in filter_combinations.combinations {
             let mut start = 0;
-            let limited_count = combination.count.min(1000);
+            let limited_count = combination.component_count.min(1000);
 
             while start < limited_count {
-                let end = (start + OCTOPART_DEFAULT_RESULT_LIMIT).min(limited_count);
-                partitions.push(PartitionedCombination {
-                    filters: combination
-                        .combination
+                let end = (start + OCTOPART_COMPONENT_RESULT_LIMIT).min(limited_count);
+                partitions.push(ComponentCount {
+                    attribute_bucket_combination: combination
+                        .attribute_bucket_combination
                         .iter()
-                        .map(|(key, value)| Filter {
-                            display_id: key.to_string(),
-                            bucket_value: value.to_string(),
+                        .map(|(key, value)| AttributeBucket {
+                            component_count: value.component_count,
+                            display_value: key.to_string(),
+                            float_value: value.float_value.clone(),
                         })
                         .collect(),
                     start,
-                    end: OCTOPART_DEFAULT_RESULT_LIMIT,
+                    end: OCTOPART_COMPONENT_RESULT_LIMIT,
                 });
 
                 start = end;
             }
         }
 
-        PartitionedCombinations { partitions }
+        ComponentCounts {
+            component_counts: partitions,
+        }
     }
 }

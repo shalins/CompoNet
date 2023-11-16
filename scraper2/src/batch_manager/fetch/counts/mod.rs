@@ -14,7 +14,8 @@ use crate::batch_manager::fetch::tasks::TaskType;
 use crate::batch_manager::request::request_sender::RequestSender;
 use crate::batch_manager::request::response_handler::ResponseHandler;
 use crate::batch_manager::types::{
-    AttributeBuckets, Bucket, BucketPair, FilterCombination, FilterCombinations,
+    AttributeBucket, AttributeBucketCombination, AttributeBucketCombinations, AttributeBucketPair,
+    AttributeBuckets,
 };
 use crate::cli::Arguments;
 use crate::config::prompts::print_info_message;
@@ -36,13 +37,13 @@ impl ComponentCounter {
     pub(crate) fn new(
         args: Arc<RwLock<Arguments>>,
         batch_size: usize,
-        attribute_ids: Vec<String>,
+        attribute_display_values: Vec<String>,
         attribute_buckets: AttributeBuckets,
         request_sender: Arc<RequestSender>,
         response_handler: Arc<ResponseHandler>,
     ) -> Result<Self, anyhow::Error> {
         let attribute_bucket_metadata =
-            AttributeBucketMetadata::new(attribute_ids, attribute_buckets)?;
+            AttributeBucketMetadata::new(attribute_display_values, attribute_buckets)?;
 
         Ok(Self {
             args,
@@ -53,7 +54,7 @@ impl ComponentCounter {
         })
     }
 
-    pub(crate) async fn process(&mut self) -> Result<FilterCombinations, anyhow::Error> {
+    pub(crate) async fn process(&mut self) -> Result<AttributeBucketCombinations, anyhow::Error> {
         let results = match self
             .attribute_bucket_metadata
             .attribute_buckets
@@ -61,55 +62,66 @@ impl ComponentCounter {
             .len()
         {
             1 => {
-                let buckets = self
+                let attribute_buckets = self
                     .attribute_bucket_metadata
                     .attribute_buckets
                     .buckets
                     .clone()
-                    .get(&self.attribute_bucket_metadata.last_attribute_bucket_key)
+                    .get(
+                        &self
+                            .attribute_bucket_metadata
+                            .last_attribute_bucket_display_value,
+                    )
                     .ok_or(anyhow!("Failed to get first attribute bucket"))?
                     .clone();
-                let mut filter_combinations = FilterCombinations::default();
-                for bucket in buckets {
+                let mut attribute_bucket_combinations = AttributeBucketCombinations::default();
+                for attribute_bucket in attribute_buckets {
                     let mut combination = HashMap::new();
                     combination.insert(
                         self.attribute_bucket_metadata
-                            .last_attribute_bucket_key
+                            .last_attribute_bucket_display_value
                             .clone(),
-                        bucket
-                            .float_value
-                            .unwrap_or(bucket.display_value)
-                            .to_string(),
+                        attribute_bucket.clone(),
                     );
-                    filter_combinations.combinations.push(FilterCombination {
-                        combination,
-                        count: bucket.count,
-                    })
+                    attribute_bucket_combinations
+                        .combinations
+                        .push(AttributeBucketCombination {
+                            attribute_bucket_combination: combination,
+                            component_count: attribute_bucket.component_count,
+                        })
                 }
-                Ok(vec![Ok(filter_combinations)])
+                Ok(vec![Ok(attribute_bucket_combinations)])
             }
             2 | 3 => {
                 print_info_message("Counting component batches...", false);
-                let buckets_to_process = self.get_bucket_pairs().await?;
+                let attribute_buckets_to_process = self.get_attribute_bucket_pairs().await?;
 
-                let task_data_queue: VecDeque<AttributeTaskData> = buckets_to_process
+                let task_data_queue: VecDeque<AttributeTaskData> = attribute_buckets_to_process
                     .into_iter()
-                    .map(|bucket_pair| {
-                        let (attribute_keys, attribute_values) = match &bucket_pair.first {
+                    .map(|attribute_bucket_pair| {
+                        let (attribute_keys, attribute_values) = match &attribute_bucket_pair
+                            .third_last_attribute_bucket
+                        {
                             Some((k, v)) => (
-                                vec![k.clone(), bucket_pair.second.0.clone()],
-                                vec![v.clone(), bucket_pair.second.1.clone()],
+                                vec![
+                                    k.clone(),
+                                    attribute_bucket_pair.second_last_attribute_bucket.0.clone(),
+                                ],
+                                vec![
+                                    v.clone(),
+                                    attribute_bucket_pair.second_last_attribute_bucket.1.clone(),
+                                ],
                             ),
                             None => (
-                                vec![bucket_pair.second.0.clone()],
-                                vec![bucket_pair.second.1.clone()],
+                                vec![attribute_bucket_pair.second_last_attribute_bucket.0.clone()],
+                                vec![attribute_bucket_pair.second_last_attribute_bucket.1.clone()],
                             ),
                         };
 
                         AttributeTaskData {
                             last_attribute_bucket_key: self
                                 .attribute_bucket_metadata
-                                .last_attribute_bucket_key
+                                .last_attribute_bucket_display_value
                                 .clone(),
                             attribute_keys,
                             attribute_values,
@@ -122,90 +134,116 @@ impl ComponentCounter {
             }
             _ => Ok(Vec::new()),
         };
-        let mut all_combinations = FilterCombinations::default();
+        let mut attribute_bucket_combinations = AttributeBucketCombinations::default();
         let results = results?;
         for result in results {
             match result {
-                Ok(filter_combinations) => {
-                    all_combinations
+                Ok(new_combination) => {
+                    attribute_bucket_combinations
                         .combinations
-                        .extend(filter_combinations.combinations);
+                        .extend(new_combination.combinations);
                 }
                 Err(err) => {
-                    // Handle the error properly, maybe log it or return an error
                     return Err(err);
                 }
             }
         }
 
-        for combination in &all_combinations.combinations {
+        for combination in &attribute_bucket_combinations.combinations {
             debug!(
                 "Combination: {:?}, Count: {}",
-                combination.combination, combination.count
+                combination.attribute_bucket_combination, combination.component_count
             );
         }
-        Ok(all_combinations)
+        Ok(attribute_bucket_combinations)
     }
 
-    async fn get_bucket_pairs(&self) -> Result<VecDeque<BucketPair>, anyhow::Error> {
-        let last_key = &self.attribute_bucket_metadata.last_attribute_bucket_key;
-        let second_last_key = self
+    async fn get_attribute_bucket_pairs(
+        &self,
+    ) -> Result<VecDeque<AttributeBucketPair>, anyhow::Error> {
+        let last_attribute_bucket_display_value = &self
             .attribute_bucket_metadata
-            .second_last_attribute_bucket_key
+            .last_attribute_bucket_display_value;
+        let second_last_attribute_bucket_display_value = self
+            .attribute_bucket_metadata
+            .second_last_attribute_bucket_display_value
             .as_ref()
-            .ok_or(anyhow!("Failed to get second last attribute bucket key"))?;
+            .ok_or(anyhow!(
+                "Failed to get second last attribute bucket display value"
+            ))?;
 
-        let buckets = &self.attribute_bucket_metadata.attribute_buckets.buckets;
-        let filtered_buckets: HashMap<_, _> = buckets
+        let attribute_buckets: &HashMap<String, Vec<AttributeBucket>> =
+            &self.attribute_bucket_metadata.attribute_buckets.buckets;
+        let attribute_buckets_without_last_two_attributes: HashMap<_, _> = attribute_buckets
             .iter()
-            .filter(|(key, _)| ![second_last_key, last_key].contains(key))
+            .filter(|(key, _)| {
+                ![
+                    second_last_attribute_bucket_display_value,
+                    last_attribute_bucket_display_value,
+                ]
+                .contains(key)
+            })
             .collect();
 
-        if filtered_buckets.is_empty() {
-            Ok(self.create_pairs_for_single_attribute(buckets, second_last_key))
+        if attribute_buckets_without_last_two_attributes.is_empty() {
+            Ok(self.create_pairs_for_single_attribute_bucket(
+                attribute_buckets,
+                second_last_attribute_bucket_display_value,
+            ))
         } else {
-            Ok(self.create_pairs_for_multiple_attributes(
-                buckets,
-                &filtered_buckets,
-                second_last_key,
+            Ok(self.create_pairs_for_multiple_attribute_buckets(
+                attribute_buckets,
+                &attribute_buckets_without_last_two_attributes,
+                second_last_attribute_bucket_display_value,
             ))
         }
     }
 
-    fn create_pairs_for_single_attribute(
+    fn create_pairs_for_single_attribute_bucket(
         &self,
-        buckets: &HashMap<String, Vec<Bucket>>,
-        current_key: &String,
-    ) -> VecDeque<BucketPair> {
-        buckets
-            .get(current_key)
+        attribute_buckets: &HashMap<String, Vec<AttributeBucket>>,
+        second_last_attribute_bucket_display_value: &String,
+    ) -> VecDeque<AttributeBucketPair> {
+        attribute_buckets
+            .get(second_last_attribute_bucket_display_value)
             .unwrap_or(&vec![])
             .iter()
-            .map(|bucket| BucketPair {
-                first: None,
-                second: (current_key.clone(), bucket.clone()),
+            .map(|second_last_attribute_bucket| AttributeBucketPair {
+                third_last_attribute_bucket: None,
+                second_last_attribute_bucket: (
+                    second_last_attribute_bucket_display_value.clone(),
+                    second_last_attribute_bucket.clone(),
+                ),
             })
             .collect()
     }
 
-    fn create_pairs_for_multiple_attributes(
+    fn create_pairs_for_multiple_attribute_buckets(
         &self,
-        buckets: &HashMap<String, Vec<Bucket>>,
-        filtered_buckets: &HashMap<&String, &Vec<Bucket>>,
-        current_key: &String,
-    ) -> VecDeque<BucketPair> {
+        attribute_buckets: &HashMap<String, Vec<AttributeBucket>>,
+        attribute_buckets_without_last_two_attributes: &HashMap<&String, &Vec<AttributeBucket>>,
+        second_last_attribute_bucket_display_value: &String,
+    ) -> VecDeque<AttributeBucketPair> {
         let mut bucket_pairs = VecDeque::new();
 
-        for (other_key, other_values) in filtered_buckets {
-            let current_values = buckets
-                .get(current_key)
-                .expect("Failed to get current values");
+        for (&third_last_attribute_bucket_display_value, &third_last_attribute_buckets) in
+            attribute_buckets_without_last_two_attributes
+        {
+            let second_last_attribute_buckets = attribute_buckets
+                .get(second_last_attribute_bucket_display_value)
+                .expect("Failed to get second to last attribute's buckets");
 
-            for other_value in *other_values {
-                for current_value in current_values {
-                    bucket_pairs.push_back(BucketPair {
-                        first: Some(((*other_key).clone(), other_value.clone())),
-                        second: (current_key.clone(), current_value.clone()),
+            for third_last_attribute_bucket in third_last_attribute_buckets {
+                for second_last_attribute_bucket in second_last_attribute_buckets {
+                    bucket_pairs.push_back(AttributeBucketPair {
+                        third_last_attribute_bucket: Some((
+                            third_last_attribute_bucket_display_value.clone(),
+                            third_last_attribute_bucket.clone(),
+                        )),
+                        second_last_attribute_bucket: (
+                            second_last_attribute_bucket_display_value.clone(),
+                            second_last_attribute_bucket.clone(),
+                        ),
                     });
                 }
             }

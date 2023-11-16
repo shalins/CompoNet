@@ -7,7 +7,7 @@ use tokio::task::JoinHandle;
 
 use crate::batch_manager::fetch::tasks::{process_tasks_helper, TaskProcessor, TaskType};
 use crate::batch_manager::request::request_sender::RequestType;
-use crate::batch_manager::types::{Bucket, FilterCombinations};
+use crate::batch_manager::types::{AttributeBucket, AttributeBucketCombinations};
 
 use super::ComponentCounter;
 
@@ -15,13 +15,13 @@ use super::ComponentCounter;
 pub(crate) struct AttributeTaskData {
     pub(crate) last_attribute_bucket_key: String,
     pub(crate) attribute_keys: Vec<String>,
-    pub(crate) attribute_values: Vec<Bucket>,
+    pub(crate) attribute_values: Vec<AttributeBucket>,
 }
 
 #[async_trait]
 impl TaskProcessor for ComponentCounter {
     type TaskData = AttributeTaskData;
-    type TaskResult = FilterCombinations;
+    type TaskResult = AttributeBucketCombinations;
     type TaskError = anyhow::Error;
 
     fn create_task(
@@ -60,16 +60,7 @@ impl TaskProcessor for ComponentCounter {
                 .await
                 .map_err(anyhow::Error::new)?;
 
-            let attribute_values = task_data
-                .attribute_values
-                .iter()
-                .map(|bucket| {
-                    bucket
-                        .float_value
-                        .clone()
-                        .unwrap_or(bucket.display_value.clone())
-                })
-                .collect::<Vec<_>>();
+            let attribute_values = task_data.attribute_values;
             let current_attributes = task_data
                 .attribute_keys
                 .iter()

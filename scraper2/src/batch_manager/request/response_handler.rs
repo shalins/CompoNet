@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde_json::{Error, Value};
 
 use crate::batch_manager::types::{
-    AttributeBuckets, Bucket, FilterCombination, FilterCombinations,
+    AttributeBucket, AttributeBucketCombination, AttributeBucketCombinations, AttributeBuckets,
 };
 
 /// Handles the extraction of data from JSON responses.
@@ -50,8 +50,8 @@ impl ResponseHandler {
                                 .get("float_value")
                                 .and_then(|v| v.as_f64())
                                 .map(|v| v.to_string());
-                            Bucket {
-                                count,
+                            AttributeBucket {
+                                component_count: count,
                                 display_value,
                                 float_value,
                             }
@@ -80,10 +80,10 @@ impl ResponseHandler {
     pub(crate) async fn extract_filter_combinations(
         &self,
         json: Value,
-        attribute_ids: HashMap<String, String>,
+        attribute_ids: HashMap<String, AttributeBucket>,
         last_attribute_id: String,
-    ) -> Result<FilterCombinations, Error> {
-        let mut filter_combinations = FilterCombinations::default();
+    ) -> Result<AttributeBucketCombinations, Error> {
+        let mut filter_combinations = AttributeBucketCombinations::default();
         if let Some(spec_aggs) = json
             .pointer("/data/search/spec_aggs/0/buckets")
             .and_then(|v| v.as_array())
@@ -92,21 +92,24 @@ impl ResponseHandler {
                 let mut attribute_ids = attribute_ids.clone();
                 attribute_ids.insert(
                     last_attribute_id.clone(),
-                    bucket
-                        .get("float_value")
-                        .and_then(|v| v.as_f64())
-                        .map(|f| f.to_string())
-                        .or({
-                            bucket
-                                .get("display_value")
-                                .and_then(|v| v.as_str())
-                                .map(|s| s.to_string())
-                        })
-                        .unwrap_or("".to_string()),
+                    AttributeBucket {
+                        component_count: bucket.get("count").and_then(|v| v.as_u64()).unwrap_or(0)
+                            as usize,
+                        display_value: bucket
+                            .get("display_value")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string(),
+                        float_value: bucket
+                            .get("float_value")
+                            .and_then(|v| v.as_f64())
+                            .map(|v| v.to_string()),
+                    },
                 );
-                let filter_combination = FilterCombination {
-                    combination: attribute_ids,
-                    count: bucket.get("count").and_then(|v| v.as_u64()).unwrap_or(0) as usize,
+                let filter_combination = AttributeBucketCombination {
+                    attribute_bucket_combination: attribute_ids,
+                    component_count: bucket.get("count").and_then(|v| v.as_u64()).unwrap_or(0)
+                        as usize,
                 };
                 filter_combinations.combinations.push(filter_combination);
             }

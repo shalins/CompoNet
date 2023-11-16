@@ -1,48 +1,46 @@
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
-pub(crate) struct Filter {
-    pub(crate) display_id: String,
-    pub(crate) bucket_value: String,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct PartitionedCombination {
-    pub(crate) filters: Vec<Filter>,
+pub(crate) struct ComponentCount {
+    pub(crate) attribute_bucket_combination: Vec<AttributeBucket>,
     pub(crate) start: usize,
     pub(crate) end: usize,
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct PartitionedCombinations {
-    pub(crate) partitions: Vec<PartitionedCombination>,
+pub(crate) struct ComponentCounts {
+    pub(crate) component_counts: Vec<ComponentCount>,
 }
 
+#[derive(Debug, Default)]
+pub(crate) struct AttributeBucketCombination {
+    pub(crate) attribute_bucket_combination: HashMap<String, AttributeBucket>,
+    pub(crate) component_count: usize,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct AttributeBucketCombinations {
+    pub(crate) combinations: Vec<AttributeBucketCombination>,
+}
+
+// Pair of attribute buckets ->
+// e.g. if the attributes are voltage rating dc and capacitance, a bucket pair would be
+// (first: 10v, second: 1uf) for example where the id is the display name and the bucket is the
+// bucket value
 #[derive(Clone, Debug)]
-pub(crate) struct BucketPair {
-    pub(crate) first: Option<(String, Bucket)>,
-    pub(crate) second: (String, Bucket),
+pub(crate) struct AttributeBucketPair {
+    pub(crate) third_last_attribute_bucket: Option<(String, AttributeBucket)>,
+    pub(crate) second_last_attribute_bucket: (String, AttributeBucket),
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Bucket {
-    pub(crate) count: usize,
+pub(crate) struct AttributeBucket {
+    pub(crate) component_count: usize,
     pub(crate) display_value: String,
     pub(crate) float_value: Option<String>,
 }
 
 #[derive(Debug)]
 pub(crate) struct AttributeBuckets {
-    pub(crate) buckets: HashMap<String, Vec<Bucket>>,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct FilterCombination {
-    pub(crate) combination: HashMap<String, String>,
-    pub(crate) count: usize,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct FilterCombinations {
-    pub(crate) combinations: Vec<FilterCombination>,
+    pub(crate) buckets: HashMap<String, Vec<AttributeBucket>>,
 }

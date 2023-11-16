@@ -10,12 +10,12 @@ use super::ComponentScraper;
 use crate::batch_manager::{
     fetch::tasks::{process_tasks_helper, TaskProcessor, TaskType},
     request::request_sender::RequestType,
-    types::PartitionedCombination,
+    types::ComponentCount,
 };
 
 #[derive(Clone, Debug)]
 pub(crate) struct ComponentTaskData {
-    pub(crate) partition: PartitionedCombination,
+    pub(crate) component_count: ComponentCount,
 }
 
 #[async_trait]
@@ -29,8 +29,15 @@ impl TaskProcessor for ComponentScraper {
         task_data: Self::TaskData,
     ) -> JoinHandle<Result<Self::TaskResult, Self::TaskError>> {
         let mut filters = HashMap::new();
-        for filter in task_data.partition.filters.iter() {
-            filters.insert(filter.display_id.clone(), vec![filter.bucket_value.clone()]);
+        for filter in task_data
+            .component_count
+            .attribute_bucket_combination
+            .iter()
+        {
+            filters.insert(
+                filter.display_value.clone(),
+                vec![filter.float_value.clone().unwrap_or_default()],
+            );
         }
 
         let args = self.args.clone();
@@ -44,8 +51,8 @@ impl TaskProcessor for ComponentScraper {
                     &*args.read().await,
                     RequestType::Parts {
                         filters,
-                        start: task_data.partition.start,
-                        end: task_data.partition.end,
+                        start: task_data.component_count.start,
+                        end: task_data.component_count.end,
                     },
                 )
                 .await
