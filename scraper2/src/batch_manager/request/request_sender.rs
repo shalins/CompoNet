@@ -16,7 +16,7 @@ pub(crate) enum RequestType {
     /// Request for attributes.
     Attributes,
     /// Request for parts, with filters and pagination options.
-    Parts {
+    Components {
         filters: HashMap<String, Vec<String>>,
         start: usize,
         end: usize,
@@ -33,7 +33,7 @@ pub(crate) struct RequestSender {
     client: Client,
     pub(crate) category_name: Option<String>,
     category_id: Option<String>,
-    attribute_ids: Option<Vec<String>>,
+    attribute_shortnames: Option<Vec<String>>,
     pub(crate) attribute_names: Option<Vec<String>>,
 }
 
@@ -52,13 +52,13 @@ impl RequestSender {
         let category_name = args.category_name.clone();
         let category_id = RequestSender::parse_category(args).ok();
         let attribute_names = args.attribute_names.clone();
-        let attribute_ids = RequestSender::parse_attributes(args).ok();
+        let attribute_shortnames = RequestSender::parse_attributes(args).ok();
         Self {
             client,
             category_name,
             category_id,
             attribute_names,
-            attribute_ids,
+            attribute_shortnames,
         }
     }
 
@@ -79,8 +79,8 @@ impl RequestSender {
         self.category_id.as_ref()
     }
 
-    pub(crate) fn get_attribute_ids(&self) -> Option<&Vec<String>> {
-        self.attribute_ids.as_ref()
+    pub(crate) fn get_attribute_shortnames(&self) -> Option<&Vec<String>> {
+        self.attribute_shortnames.as_ref()
     }
 
     /// Parses HTTP headers from the given arguments for constructing a request.
@@ -189,7 +189,7 @@ impl RequestSender {
         let json_data = json!({
             "operationName": "FilterModalSearch",
             "variables": {
-                "attribute_names": self.attribute_ids,
+                "attribute_names": self.attribute_shortnames,
                 "currency": "USD",
                 "filters": {
                     "category_id": [self.category_id],
@@ -210,7 +210,7 @@ impl RequestSender {
     ///
     /// # Returns
     /// A `Value` representing the JSON payload for the request.
-    fn get_parts_payload(
+    fn get_components_payload(
         &self,
         filters: HashMap<String, Vec<String>>,
         start: usize,
@@ -253,18 +253,18 @@ impl RequestSender {
         let headers = self.parse_headers(args)?;
         let body = match request_type {
             RequestType::Attributes => self.get_attributes_payload(),
-            RequestType::Parts {
+            RequestType::Components {
                 filters,
                 start,
                 end,
-            } => self.get_parts_payload(filters, start, end),
+            } => self.get_components_payload(filters, start, end),
             RequestType::ComponentCount {
                 attributes,
                 filters,
             } => {
                 let attributes = match attributes {
                     Some(attributes) => Some(attributes),
-                    None => self.attribute_ids.clone(),
+                    None => self.attribute_shortnames.clone(),
                 };
                 self.get_component_count_payload(attributes, filters)
             }

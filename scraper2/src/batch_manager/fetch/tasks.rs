@@ -13,9 +13,9 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub(crate) enum TaskType {
-    AttributeScrape,
-    ComponentCount,
-    ComponentScrape,
+    AttributeScraper,
+    ComponentCounter,
+    ComponentScraper,
 }
 
 /// A trait defining the processing behavior for tasks in an asynchronous context.

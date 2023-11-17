@@ -35,10 +35,13 @@ impl AttributeScraper {
         }
     }
 
-    pub(crate) async fn process(&self, attribute_ids: &[String]) -> Result<AttributeBuckets> {
+    pub(crate) async fn process(
+        &self,
+        attribute_bucket_display_values: &[String],
+    ) -> Result<AttributeBuckets> {
         loop {
-            let args_clone = { self.args.read().await };
-            let attribute_response = match self
+            let args_clone = self.args.read().await;
+            let attribute_bucket_response = match self
                 .request_sender
                 .clone()
                 .send_request(&args_clone, RequestType::Attributes)
@@ -47,9 +50,10 @@ impl AttributeScraper {
             {
                 Ok(json_response) => json_response,
                 Err(_) => {
-                    print_error_message(&TaskType::AttributeScrape, 1);
+                    print_error_message(&TaskType::AttributeScraper, 1);
 
-                    // Explicitly dropping the read lock before acquiring a write lock
+                    // Explicitly drop the read lock before acquiring a write lock, otherwise a
+                    // deadlock will occur.
                     drop(args_clone);
 
                     self.args.write().await.prompt_user_for_new_px_key();
@@ -60,7 +64,10 @@ impl AttributeScraper {
             return self
                 .response_handler
                 .clone()
-                .extract_buckets(attribute_response, attribute_ids)
+                .extract_attribute_buckets(
+                    attribute_bucket_response,
+                    attribute_bucket_display_values,
+                )
                 .await
                 .map_err(anyhow::Error::new);
         }

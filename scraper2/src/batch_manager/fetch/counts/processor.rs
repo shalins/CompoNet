@@ -14,8 +14,8 @@ use super::ComponentCounter;
 #[derive(Debug, Clone)]
 pub(crate) struct AttributeTaskData {
     pub(crate) last_attribute_bucket_key: String,
-    pub(crate) attribute_keys: Vec<String>,
-    pub(crate) attribute_values: Vec<AttributeBucket>,
+    pub(crate) attribute_bucket_display_values: Vec<String>,
+    pub(crate) attribute_buckets: Vec<AttributeBucket>,
 }
 
 #[async_trait]
@@ -28,18 +28,18 @@ impl TaskProcessor for ComponentCounter {
         &self,
         task_data: Self::TaskData,
     ) -> JoinHandle<Result<Self::TaskResult, Self::TaskError>> {
-        let mut filters = HashMap::new();
-        for (key, bucket) in task_data
-            .attribute_keys
+        let mut attribute_bucket_combinations = HashMap::new();
+        for (attribute_display_value, attribute_bucket) in task_data
+            .attribute_bucket_display_values
             .iter()
-            .zip(task_data.attribute_values.iter())
+            .zip(task_data.attribute_buckets.iter())
         {
-            filters.insert(
-                key.clone(),
-                vec![bucket
+            attribute_bucket_combinations.insert(
+                attribute_display_value.clone(),
+                vec![attribute_bucket
                     .float_value
                     .clone()
-                    .unwrap_or(bucket.display_value.clone())],
+                    .unwrap_or(attribute_bucket.display_value.clone())],
             );
         }
 
@@ -54,24 +54,24 @@ impl TaskProcessor for ComponentCounter {
                     &*args.read().await,
                     RequestType::ComponentCount {
                         attributes: Some(vec![task_data.last_attribute_bucket_key.clone()]),
-                        filters: Some(filters),
+                        filters: Some(attribute_bucket_combinations),
                     },
                 )
                 .await
                 .map_err(anyhow::Error::new)?;
 
-            let attribute_values = task_data.attribute_values;
-            let current_attributes = task_data
-                .attribute_keys
+            let attribute_buckets = task_data.attribute_buckets;
+            let current_attribute_bucket_combinations = task_data
+                .attribute_bucket_display_values
                 .iter()
                 .cloned()
-                .zip(attribute_values)
+                .zip(attribute_buckets)
                 .collect::<HashMap<_, _>>();
 
             response_handler
-                .extract_filter_combinations(
+                .extract_attribute_bucket_combinations(
                     response,
-                    current_attributes,
+                    current_attribute_bucket_combinations,
                     task_data.last_attribute_bucket_key,
                 )
                 .await

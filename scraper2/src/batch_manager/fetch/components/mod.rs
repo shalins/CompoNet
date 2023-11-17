@@ -45,51 +45,57 @@ impl ComponentScraper {
 
     pub(crate) async fn process(
         &self,
-        filter_combinations: AttributeBucketCombinations,
+        attribute_bucket_combinations: AttributeBucketCombinations,
     ) -> Result<Vec<Result<Vec<Value>>>> {
         print_info_message("Scraping component batches...", false);
-        let partitions = self.get_partitioned_combinations(filter_combinations).await;
-        let partitions_to_process = self.get_partitions(partitions).await?;
-        self.process_tasks(TaskType::ComponentScrape, partitions_to_process)
+        let component_counts = self
+            .create_component_counts(attribute_bucket_combinations)
+            .await;
+        let component_counts_to_process = self
+            .create_component_counts_to_process(component_counts)
+            .await?;
+        self.process_tasks(TaskType::ComponentScraper, component_counts_to_process)
             .await
     }
 
-    async fn get_partitions(
+    async fn create_component_counts_to_process(
         &self,
-        partitioned_combinations: ComponentCounts,
+        component_counts: ComponentCounts,
     ) -> Result<VecDeque<ComponentTaskData>, anyhow::Error> {
-        let buckets_to_process = partitioned_combinations
+        let component_counts_to_process = component_counts
             .component_counts
             .iter()
             .cloned()
-            .map(|partition| ComponentTaskData {
-                component_count: partition.clone(),
+            .map(|component_count| ComponentTaskData {
+                component_count: component_count.clone(),
             })
             .collect::<VecDeque<_>>();
-        Ok(buckets_to_process)
+        Ok(component_counts_to_process)
     }
 
-    async fn get_partitioned_combinations(
+    async fn create_component_counts(
         &self,
-        filter_combinations: AttributeBucketCombinations,
+        attribute_bucket_combinations: AttributeBucketCombinations,
     ) -> ComponentCounts {
-        let mut partitions = Vec::new();
+        let mut component_counts = Vec::new();
 
-        for combination in filter_combinations.combinations {
+        for combination in attribute_bucket_combinations.combinations {
             let mut start = 0;
             let limited_count = combination.component_count.min(1000);
 
             while start < limited_count {
                 let end = (start + OCTOPART_COMPONENT_RESULT_LIMIT).min(limited_count);
-                partitions.push(ComponentCount {
+                component_counts.push(ComponentCount {
                     attribute_bucket_combination: combination
                         .attribute_bucket_combination
                         .iter()
-                        .map(|(key, value)| AttributeBucket {
-                            component_count: value.component_count,
-                            display_value: key.to_string(),
-                            float_value: value.float_value.clone(),
-                        })
+                        .map(
+                            |(attribute_bucket_display_value, attribute_bucket)| AttributeBucket {
+                                component_count: attribute_bucket.component_count,
+                                display_value: attribute_bucket_display_value.to_string(),
+                                float_value: attribute_bucket.float_value.clone(),
+                            },
+                        )
                         .collect(),
                     start,
                     end: OCTOPART_COMPONENT_RESULT_LIMIT,
@@ -99,8 +105,6 @@ impl ComponentScraper {
             }
         }
 
-        ComponentCounts {
-            component_counts: partitions,
-        }
+        ComponentCounts { component_counts }
     }
 }

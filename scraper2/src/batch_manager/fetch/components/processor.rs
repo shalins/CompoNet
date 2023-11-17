@@ -28,15 +28,15 @@ impl TaskProcessor for ComponentScraper {
         &self,
         task_data: Self::TaskData,
     ) -> JoinHandle<Result<Self::TaskResult, Self::TaskError>> {
-        let mut filters = HashMap::new();
-        for filter in task_data
+        let mut attribute_bucket_combinations = HashMap::new();
+        for attribute_bucket in task_data
             .component_count
             .attribute_bucket_combination
             .iter()
         {
-            filters.insert(
-                filter.display_value.clone(),
-                vec![filter.float_value.clone().unwrap_or_default()],
+            attribute_bucket_combinations.insert(
+                attribute_bucket.display_value.clone(),
+                vec![attribute_bucket.float_value.clone().unwrap_or_default()],
             );
         }
 
@@ -49,8 +49,8 @@ impl TaskProcessor for ComponentScraper {
                 .clone()
                 .send_request(
                     &*args.read().await,
-                    RequestType::Parts {
-                        filters,
+                    RequestType::Components {
+                        filters: attribute_bucket_combinations,
                         start: task_data.component_count.start,
                         end: task_data.component_count.end,
                     },

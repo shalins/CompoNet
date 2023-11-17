@@ -20,23 +20,25 @@ impl ResponseHandler {
     ///
     /// # Arguments
     /// * `json` - The JSON value containing the response data.
-    /// * `attribute_ids` - A slice of attribute ID strings to be extracted.
+    /// * `attribute_bucket_display_values` - A slice of attribute display value strings to be extracted.
     ///
     /// # Returns
     /// A `Result` containing `AttributeBuckets` on success or an `Error` if extraction fails.
-    pub(crate) async fn extract_buckets(
+    pub(crate) async fn extract_attribute_buckets(
         &self,
         json: Value,
-        attribute_ids: &[String],
+        attribute_bucket_display_values: &[String],
     ) -> Result<AttributeBuckets, Error> {
-        let mut bucket_map = HashMap::new();
+        let mut attribute_bucket_map = HashMap::new();
         if let Some(spec_aggs) = json
             .pointer("/data/search/spec_aggs")
             .and_then(|v| v.as_array())
         {
-            for (name, attribute_data) in attribute_ids.iter().zip(spec_aggs.iter()) {
+            for (attribute_bucket_display_value, attribute_data) in
+                attribute_bucket_display_values.iter().zip(spec_aggs.iter())
+            {
                 if let Some(buckets) = attribute_data.get("buckets").and_then(|v| v.as_array()) {
-                    let extracted_buckets = buckets
+                    let extracted_attribute_buckets = buckets
                         .iter()
                         .map(|bucket| {
                             let count =
@@ -58,13 +60,16 @@ impl ResponseHandler {
                         })
                         .collect();
 
-                    bucket_map.insert(name.to_string(), extracted_buckets);
+                    attribute_bucket_map.insert(
+                        attribute_bucket_display_value.to_string(),
+                        extracted_attribute_buckets,
+                    );
                 }
             }
         }
 
         Ok(AttributeBuckets {
-            buckets: bucket_map,
+            buckets: attribute_bucket_map,
         })
     }
 
@@ -72,49 +77,56 @@ impl ResponseHandler {
     ///
     /// # Arguments
     /// * `json` - The JSON value containing the response data.
-    /// * `attribute_ids` - A hashmap of attribute IDs to their corresponding values.
-    /// * `last_attribute_id` - The last attribute ID in the sequence to be processed.
+    /// * `current_attribute_bucket_combinations` - A hashmap of bucket attribute IDs to the corresponding `AttributeBucket`.
+    /// * `last_attribute_bucket_key` - The key of the last attribute bucket in the combination.
     ///
     /// # Returns
-    /// A `Result` containing `FilterCombinations` on success or an `Error` if extraction fails.
-    pub(crate) async fn extract_filter_combinations(
+    /// A `Result` containing `AttributeBucketCombination` on success or an `Error` if extraction fails.
+    pub(crate) async fn extract_attribute_bucket_combinations(
         &self,
         json: Value,
-        attribute_ids: HashMap<String, AttributeBucket>,
-        last_attribute_id: String,
+        current_attribute_bucket_combinations: HashMap<String, AttributeBucket>,
+        last_attribute_bucket_key: String,
     ) -> Result<AttributeBucketCombinations, Error> {
-        let mut filter_combinations = AttributeBucketCombinations::default();
+        let mut attribute_bucket_combinations = AttributeBucketCombinations::default();
         if let Some(spec_aggs) = json
             .pointer("/data/search/spec_aggs/0/buckets")
             .and_then(|v| v.as_array())
         {
-            for bucket in spec_aggs.iter() {
-                let mut attribute_ids = attribute_ids.clone();
-                attribute_ids.insert(
-                    last_attribute_id.clone(),
+            for attribute_bucket in spec_aggs.iter() {
+                let mut current_attribute_bucket_combinations =
+                    current_attribute_bucket_combinations.clone();
+                current_attribute_bucket_combinations.insert(
+                    last_attribute_bucket_key.clone(),
                     AttributeBucket {
-                        component_count: bucket.get("count").and_then(|v| v.as_u64()).unwrap_or(0)
-                            as usize,
-                        display_value: bucket
+                        component_count: attribute_bucket
+                            .get("count")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as usize,
+                        display_value: attribute_bucket
                             .get("display_value")
                             .and_then(|v| v.as_str())
                             .unwrap_or("")
                             .to_string(),
-                        float_value: bucket
+                        float_value: attribute_bucket
                             .get("float_value")
                             .and_then(|v| v.as_f64())
                             .map(|v| v.to_string()),
                     },
                 );
                 let filter_combination = AttributeBucketCombination {
-                    attribute_bucket_combination: attribute_ids,
-                    component_count: bucket.get("count").and_then(|v| v.as_u64()).unwrap_or(0)
-                        as usize,
+                    attribute_bucket_combination: current_attribute_bucket_combinations,
+                    component_count: attribute_bucket
+                        .get("count")
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(0) as usize,
                 };
-                filter_combinations.combinations.push(filter_combination);
+                attribute_bucket_combinations
+                    .combinations
+                    .push(filter_combination);
             }
         }
-        Ok(filter_combinations)
+        Ok(attribute_bucket_combinations)
     }
 
     /// Extracts a list of components from the JSON response.

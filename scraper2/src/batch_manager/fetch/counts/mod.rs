@@ -99,37 +99,48 @@ impl ComponentCounter {
                 let task_data_queue: VecDeque<AttributeTaskData> = attribute_buckets_to_process
                     .into_iter()
                     .map(|attribute_bucket_pair| {
-                        let (attribute_keys, attribute_values) = match &attribute_bucket_pair
-                            .third_last_attribute_bucket
-                        {
-                            Some((k, v)) => (
-                                vec![
-                                    k.clone(),
-                                    attribute_bucket_pair.second_last_attribute_bucket.0.clone(),
-                                ],
-                                vec![
-                                    v.clone(),
-                                    attribute_bucket_pair.second_last_attribute_bucket.1.clone(),
-                                ],
-                            ),
-                            None => (
-                                vec![attribute_bucket_pair.second_last_attribute_bucket.0.clone()],
-                                vec![attribute_bucket_pair.second_last_attribute_bucket.1.clone()],
-                            ),
-                        };
+                        let (attribute_bucket_display_values, attribute_buckets) =
+                            match &attribute_bucket_pair.third_last_attribute_bucket {
+                                Some((k, v)) => (
+                                    vec![
+                                        k.clone(),
+                                        attribute_bucket_pair
+                                            .second_last_attribute_bucket
+                                            .0
+                                            .clone(),
+                                    ],
+                                    vec![
+                                        v.clone(),
+                                        attribute_bucket_pair
+                                            .second_last_attribute_bucket
+                                            .1
+                                            .clone(),
+                                    ],
+                                ),
+                                None => (
+                                    vec![attribute_bucket_pair
+                                        .second_last_attribute_bucket
+                                        .0
+                                        .clone()],
+                                    vec![attribute_bucket_pair
+                                        .second_last_attribute_bucket
+                                        .1
+                                        .clone()],
+                                ),
+                            };
 
                         AttributeTaskData {
                             last_attribute_bucket_key: self
                                 .attribute_bucket_metadata
                                 .last_attribute_bucket_display_value
                                 .clone(),
-                            attribute_keys,
-                            attribute_values,
+                            attribute_bucket_display_values,
+                            attribute_buckets,
                         }
                     })
                     .collect();
 
-                self.process_tasks(TaskType::ComponentCount, task_data_queue)
+                self.process_tasks(TaskType::ComponentCounter, task_data_queue)
                     .await
             }
             _ => Ok(Vec::new()),

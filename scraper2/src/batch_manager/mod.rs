@@ -33,10 +33,10 @@ impl BatchManager {
         let response_handler = Arc::new(ResponseHandler::new());
 
         // 1. Get the attribute ids from the request sender.
-        let attribute_ids = request_sender
-            .get_attribute_ids()
+        let attribute_shortnames = request_sender
+            .get_attribute_shortnames()
             .ok_or_else(|| anyhow!("Failed to get attribute ids"))?;
-        debug!("Attribute IDs: {:?}", attribute_ids);
+        debug!("Attribute Shortnames: {:?}", attribute_shortnames);
 
         // 2. Get the attribute buckets from the attribute scraper.
         let attribute_scraper = AttributeScraper::new(
@@ -44,14 +44,14 @@ impl BatchManager {
             request_sender.clone(),
             response_handler.clone(),
         );
-        let attribute_buckets = attribute_scraper.process(attribute_ids).await?;
+        let attribute_buckets = attribute_scraper.process(attribute_shortnames).await?;
         debug!("Attribute Buckets: {:?}", attribute_buckets);
 
         // 3. Get the filter combination & component counts from the component counter.
         let mut component_counter = ComponentCounter::new(
             self.args.clone(),
             self.batch_size,
-            attribute_ids.clone(),
+            attribute_shortnames.clone(),
             attribute_buckets,
             request_sender.clone(),
             response_handler.clone(),
