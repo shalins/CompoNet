@@ -4,8 +4,9 @@ use log::debug;
 use crate::config::{
     constants::DEFAULT_USER_AGENT,
     prompts::{
-        prompt_for_input, ATTRIBUTE_NAME_COLOR, ATTRIBUTE_NAME_PROMPT, CATEGORY_NAME_COLOR,
-        CATEGORY_NAME_PROMPT, PX_KEY_COLOR, PX_KEY_PROMPT, USER_AGENT_COLOR, USER_AGENT_PROMPT,
+        prompt_for_input, prompt_for_yn, ATTRIBUTE_NAME_COLOR, ATTRIBUTE_NAME_PROMPT,
+        CATEGORY_NAME_COLOR, CATEGORY_NAME_PROMPT, FILE_OVERWRITE_COLOR, FILE_OVERWRITE_PROMPT,
+        PX_KEY_COLOR, PX_KEY_PROMPT, USER_AGENT_COLOR, USER_AGENT_PROMPT,
     },
 };
 
@@ -94,5 +95,11 @@ impl Cli {
         let mut args = Arguments::parse();
         args.prompt_for_missing_fields();
         args
+    }
+
+    pub fn prompt_user_for_file_overwrite() -> bool {
+        let input = prompt_for_yn(FILE_OVERWRITE_PROMPT, FILE_OVERWRITE_COLOR, Some("Y"));
+        let yn = input.to_lowercase();
+        matches!(yn.as_str(), "y" | "yes")
     }
 }

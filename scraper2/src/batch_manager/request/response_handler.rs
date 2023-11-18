@@ -1,19 +1,31 @@
 use std::collections::HashMap;
 
+use anyhow::Result;
 use serde_json::{Error, Value};
+use tokio::sync::{oneshot, Mutex};
 
 use crate::batch_manager::types::{
     AttributeBucket, AttributeBucketCombination, AttributeBucketCombinations, AttributeBuckets,
 };
 
 /// Handles the extraction of data from JSON responses.
-#[derive(Default)]
-pub(crate) struct ResponseHandler();
+pub(crate) struct ResponseHandler {
+    metadata_channel_tx: Mutex<Option<oneshot::Sender<Value>>>,
+    pub metadata_channel_rx: Mutex<Option<oneshot::Receiver<Value>>>,
+}
 
 impl ResponseHandler {
     /// Constructs a new `ResponseHandler`.
     pub(crate) fn new() -> Self {
-        Self::default()
+        let (metadata_channel_tx, metadata_channel_rx) = oneshot::channel();
+        ResponseHandler {
+            metadata_channel_tx: Mutex::new(Some(metadata_channel_tx)),
+            metadata_channel_rx: Mutex::new(Some(metadata_channel_rx)),
+        }
+    }
+
+    pub(crate) async fn take_receiver(&self) -> Option<oneshot::Receiver<Value>> {
+        self.metadata_channel_rx.lock().await.take()
     }
 
     /// Extracts attribute buckets from the provided JSON value.
@@ -129,17 +141,24 @@ impl ResponseHandler {
         Ok(attribute_bucket_combinations)
     }
 
-    /// Extracts a list of components from the JSON response.
+    /// Extracts components from JSON response and sends metadata once.
+    ///
+    /// Sends metadata over a one-time channel, then extracts and returns components
+    /// from the JSON response. If the channel is already used, metadata sending is skipped.
     ///
     /// # Arguments
-    /// * `json` - The JSON value containing the response data.
+    /// * `json` - JSON with response data.
     ///
     /// # Returns
-    /// A `Result` containing a `Vec<Value>` representing components on success, or an `anyhow::Error` if no results are found.
-    pub(crate) async fn extract_components(
-        &self,
-        json: Value,
-    ) -> Result<Vec<Value>, anyhow::Error> {
+    /// `Vec<Value>` of components on success, or `anyhow::Error` on failure.
+    pub(crate) async fn extract_components(&self, json: Value) -> Result<Vec<Value>> {
+        let metadata = self.get_component_response_metadata(json.clone()).await?;
+        if let Some(sender) = self.metadata_channel_tx.lock().await.take() {
+            sender.send(metadata).map_err(|_| {
+                anyhow::Error::msg("Failed to send component response metadata over channel")
+            })?;
+        };
+
         match json
             .pointer("/data/search/results")
             .and_then(|v| v.as_array())
@@ -148,6 +167,25 @@ impl ResponseHandler {
             None => Err(anyhow::Error::msg("No results found")),
         }
     }
-}
 
-// we want some kind of indication of how many components there are for each attribute bucket.
+    /// Extracts metadata from JSON response, removing component data.
+    ///
+    /// Modifies JSON to remove data at `/data/search/results`, extracting metadata.
+    /// Ensures the path exists before removal.
+    ///
+    /// # Arguments
+    /// * `json` - Mutable JSON with response data.
+    ///
+    /// # Returns
+    /// Modified JSON as `Value` on success, or `anyhow::Error` if path not found.
+    async fn get_component_response_metadata(&self, mut json: Value) -> Result<Value> {
+        if let Some(results) = json.pointer_mut("/data/search/results") {
+            *results = Value::Array(vec![]);
+        } else {
+            return Err(anyhow::Error::msg(
+                "Invalid JSON structure: '/data/search/results' path not found",
+            ));
+        }
+        Ok(json)
+    }
+}

@@ -15,7 +15,7 @@ use crate::batch_manager::types::{
 
 use crate::cli::Arguments;
 use crate::config::constants::OCTOPART_COMPONENT_RESULT_LIMIT;
-use crate::config::prompts::print_info_message;
+use crate::config::prompts::{print_error_message, print_info_message};
 
 use super::tasks::{TaskProcessor, TaskType};
 
@@ -26,6 +26,31 @@ pub(crate) struct ComponentScraper {
     batch_size: usize,
     request_sender: Arc<RequestSender>,
     response_handler: Arc<ResponseHandler>,
+    /// Holds the additional metadata attacehed to the component results.
+    ///
+    /// Example:
+    /// ```{
+    ///   "data": {
+    ///     "search": {
+    ///       "applied_category": {
+    ///         "ancestors": [
+    ///           {
+    ///             "id": "4161",
+    ///             "name": "Electronic Parts",
+    ///             "path": "/electronic-parts",
+    ///           },
+    ///           ...
+    ///         ],
+    ///         "id": "6334",
+    ///         "name": "Mica Capacitors",
+    ///         "path": "/electronic-parts/passive-components/capacitors/mica-capacitors",
+    ///         "results": [ ... ] // <-- Component results are here.
+    ///       }
+    ///     }
+    ///   }
+    /// }
+    /// ```
+    component_response_metadata: Option<Value>,
 }
 
 impl ComponentScraper {
@@ -40,11 +65,16 @@ impl ComponentScraper {
             batch_size,
             request_sender,
             response_handler,
+            component_response_metadata: None,
         }
     }
 
+    pub(crate) fn get_component_response_metadata(&self) -> Option<Value> {
+        self.component_response_metadata.clone()
+    }
+
     pub(crate) async fn process(
-        &self,
+        &mut self,
         attribute_bucket_combinations: AttributeBucketCombinations,
     ) -> Result<Vec<Result<Vec<Value>>>> {
         print_info_message("Scraping component batches...", false);
@@ -54,8 +84,22 @@ impl ComponentScraper {
         let component_counts_to_process = self
             .create_component_counts_to_process(component_counts)
             .await?;
-        self.process_tasks(TaskType::ComponentScraper, component_counts_to_process)
-            .await
+
+        let results = self
+            .process_tasks(TaskType::ComponentScraper, component_counts_to_process)
+            .await;
+        // Wait for the metadata.
+        if let Some(receiver) = self.response_handler.clone().take_receiver().await {
+            match receiver.await {
+                Ok(metadata) => {
+                    self.component_response_metadata = Some(metadata);
+                }
+                Err(_) => {
+                    print_error_message(&"Failed to get component response metadata");
+                }
+            };
+        };
+        results
     }
 
     async fn create_component_counts_to_process(

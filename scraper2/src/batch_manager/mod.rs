@@ -61,7 +61,7 @@ impl BatchManager {
         debug!("Component Counts: {:?}", component_counts);
 
         // 4. Get the components from the component scraper.
-        let component_scraper = ComponentScraper::new(
+        let mut component_scraper = ComponentScraper::new(
             self.args.clone(),
             self.batch_size,
             request_sender.clone(),
@@ -71,8 +71,9 @@ impl BatchManager {
         debug!("Components: {:?}", components);
 
         // 5. Save the components to disk.
+        let mut metadata = component_scraper.get_component_response_metadata();
         let data_manager = DataManager::new(self.args.clone());
-        data_manager.save_to_disk(components).await?;
+        data_manager.save_to_disk(components, &mut metadata).await?;
         debug!("Saved components to disk");
 
         Ok(())

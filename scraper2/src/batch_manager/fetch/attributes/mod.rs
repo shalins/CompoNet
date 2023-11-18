@@ -13,7 +13,7 @@ use crate::{
         types::AttributeBuckets,
     },
     cli::Arguments,
-    config::prompts::print_error_message,
+    config::prompts::print_task_error_message,
 };
 
 pub(crate) struct AttributeScraper {
@@ -50,7 +50,7 @@ impl AttributeScraper {
             {
                 Ok(json_response) => json_response,
                 Err(_) => {
-                    print_error_message(&TaskType::AttributeScraper, 1);
+                    print_task_error_message(&TaskType::AttributeScraper, 1);
 
                     // Explicitly drop the read lock before acquiring a write lock, otherwise a
                     // deadlock will occur.

@@ -8,7 +8,7 @@ use tokio::{sync::RwLock, task::JoinHandle};
 
 use crate::{
     cli::Arguments,
-    config::prompts::{print_error_message, LAZY_PROGRESS_STYLE},
+    config::prompts::{print_task_error_message, LAZY_PROGRESS_STYLE},
 };
 
 #[derive(Debug, Clone)]
@@ -160,7 +160,7 @@ where
                 .collect();
 
             if !failed_tasks.is_empty() {
-                print_error_message(&task_type, failed_tasks.len());
+                print_task_error_message(&task_type, failed_tasks.len());
                 args.write().await.prompt_user_for_new_px_key();
                 task_data_queue.extend(failed_tasks.into_iter()); // FIX THIS
             } else {
