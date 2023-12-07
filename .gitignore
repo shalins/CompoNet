@@ -6,6 +6,7 @@ _*
 *.csv
 experiments/
 data/
+scraper2/src/data
 
 
 #VSCode

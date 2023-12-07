@@ -24,6 +24,12 @@ pub struct Arguments {
     pub(crate) user_agent: Option<String>,
     pub(crate) category_name: Option<String>,
     pub(crate) attribute_names: Option<Vec<String>>,
+
+    #[clap(
+        long = "combine-metadata",
+        help = "Combine all metadata files into a single file and delete individual files"
+    )]
+    pub combine_metadata: bool,
 }
 
 impl Arguments {

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, Result};
 use log::debug;
 use tokio::sync::RwLock;
+use tokio::time::Instant;
 
 mod fetch;
 mod request;
@@ -29,6 +30,8 @@ impl BatchManager {
     }
 
     pub async fn run(&mut self) -> Result<()> {
+        let start = Instant::now();
+
         let request_sender = Arc::new(RequestSender::new(&*self.args.read().await));
         let response_handler = Arc::new(ResponseHandler::new());
 
@@ -71,9 +74,12 @@ impl BatchManager {
         debug!("Components: {:?}", components);
 
         // 5. Save the components to disk.
-        let mut metadata = component_scraper.get_component_response_metadata();
+        let mut octopart_metadata = component_scraper.get_octopart_component_metadata();
+        let scraper_time = component_scraper.get_scraper_component_metadata(start.elapsed());
         let data_manager = DataManager::new(self.args.clone());
-        data_manager.save_to_disk(components, &mut metadata).await?;
+        data_manager
+            .save_to_disk(components, &mut octopart_metadata, scraper_time)
+            .await?;
         debug!("Saved components to disk");
 
         Ok(())

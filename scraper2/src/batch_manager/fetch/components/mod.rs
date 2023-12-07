@@ -1,8 +1,10 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
-use serde_json::Value;
+use chrono::Utc;
+use serde_json::{json, Value};
 use tokio::sync::RwLock;
 
 pub(crate) mod processor;
@@ -14,7 +16,9 @@ use crate::batch_manager::types::{
 };
 
 use crate::cli::Arguments;
-use crate::config::constants::OCTOPART_COMPONENT_RESULT_LIMIT;
+use crate::config::constants::{
+    OCTOPART_COMPONENT_COMBINATION_LIMIT, OCTOPART_COMPONENT_REQUEST_LIMIT,
+};
 use crate::config::prompts::{print_error_message, print_info_message};
 
 use super::tasks::{TaskProcessor, TaskType};
@@ -26,10 +30,11 @@ pub(crate) struct ComponentScraper {
     batch_size: usize,
     request_sender: Arc<RequestSender>,
     response_handler: Arc<ResponseHandler>,
-    /// Holds the additional metadata attacehed to the component results.
+    /// Holds the additional metadata from Octopart.
     ///
     /// Example:
-    /// ```{
+    /// ```
+    /// {
     ///   "data": {
     ///     "search": {
     ///       "applied_category": {
@@ -50,7 +55,20 @@ pub(crate) struct ComponentScraper {
     ///   }
     /// }
     /// ```
-    component_response_metadata: Option<Value>,
+    octopart_component_metadata: Option<Value>,
+
+    /// Holds the additional metadata from the Scraper tool.
+    ///
+    /// Example:
+    /// ```
+    /// {
+    ///  "components_scraped": 23000,
+    ///  "components_missed": 234,
+    ///  "total_time": 0.02,
+    ///  "date_collected": "2023-12-06T00:00:00Z",
+    /// }
+    /// ```
+    scraper_component_metadata: Option<Value>,
 }
 
 impl ComponentScraper {
@@ -65,12 +83,30 @@ impl ComponentScraper {
             batch_size,
             request_sender,
             response_handler,
-            component_response_metadata: None,
+            octopart_component_metadata: None,
+            scraper_component_metadata: None,
         }
     }
 
-    pub(crate) fn get_component_response_metadata(&self) -> Option<Value> {
-        self.component_response_metadata.clone()
+    pub(crate) fn get_octopart_component_metadata(&self) -> Option<Value> {
+        self.octopart_component_metadata.clone()
+    }
+
+    pub(crate) fn get_scraper_component_metadata(&mut self, total_time: Duration) -> Option<Value> {
+        if self.scraper_component_metadata.is_none() {
+            self.scraper_component_metadata = Some(json!({
+                "components_scraped": 0,
+                "components_missed": 0,
+                "total_time": total_time.as_secs_f64(),
+                "date_collected": Utc::now().timestamp(),
+            }));
+        } else {
+            self.scraper_component_metadata.as_mut().map(|metadata| {
+                metadata["total_time"] = json!(total_time.as_secs_f64());
+                metadata
+            });
+        }
+        self.scraper_component_metadata.clone()
     }
 
     pub(crate) async fn process(
@@ -88,11 +124,11 @@ impl ComponentScraper {
         let results = self
             .process_tasks(TaskType::ComponentScraper, component_counts_to_process)
             .await;
-        // Wait for the metadata.
+        // Wait for the Octopart metadata.
         if let Some(receiver) = self.response_handler.clone().take_receiver().await {
             match receiver.await {
                 Ok(metadata) => {
-                    self.component_response_metadata = Some(metadata);
+                    self.octopart_component_metadata = Some(metadata);
                 }
                 Err(_) => {
                     print_error_message(&"Failed to get component response metadata");
@@ -118,17 +154,27 @@ impl ComponentScraper {
     }
 
     async fn create_component_counts(
-        &self,
+        &mut self,
         attribute_bucket_combinations: AttributeBucketCombinations,
     ) -> ComponentCounts {
         let mut component_counts = Vec::new();
+        let mut total_components_scraped = 0;
+        let mut total_components_missed = 0;
 
         for combination in attribute_bucket_combinations.combinations {
             let mut start = 0;
-            let limited_count = combination.component_count.min(1000);
+            let limited_count = combination
+                .component_count
+                .min(OCTOPART_COMPONENT_COMBINATION_LIMIT);
+
+            total_components_scraped += limited_count;
+            if combination.component_count > OCTOPART_COMPONENT_COMBINATION_LIMIT {
+                total_components_missed +=
+                    combination.component_count - OCTOPART_COMPONENT_COMBINATION_LIMIT;
+            }
 
             while start < limited_count {
-                let end = (start + OCTOPART_COMPONENT_RESULT_LIMIT).min(limited_count);
+                let end = (start + OCTOPART_COMPONENT_REQUEST_LIMIT).min(limited_count);
                 component_counts.push(ComponentCount {
                     attribute_bucket_combination: combination
                         .attribute_bucket_combination
@@ -142,13 +188,23 @@ impl ComponentScraper {
                         )
                         .collect(),
                     start,
-                    end: OCTOPART_COMPONENT_RESULT_LIMIT,
+                    end: OCTOPART_COMPONENT_REQUEST_LIMIT,
                 });
 
                 start = end;
             }
         }
 
+        self.fill_scraper_metadata(total_components_scraped, total_components_missed);
+
         ComponentCounts { component_counts }
+    }
+
+    fn fill_scraper_metadata(&mut self, components_scraped: usize, components_missed: usize) {
+        self.scraper_component_metadata = Some(json!({
+            "components_scraped": components_scraped,
+            "components_missed": components_missed,
+            "date_collected": Utc::now().timestamp(),
+        }));
     }
 }
