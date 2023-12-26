@@ -3,7 +3,7 @@
 # code.
 
 # https://octopart.com/api/v4/values#categories
-categories_cache = {
+categories_map = {
     "Passive Components": "4165",
     "Capacitors": "4166",
     "Aluminum Electrolytic Capacitors": "6331",
@@ -23,7 +23,7 @@ categories_cache = {
 }
 
 # https://octopart.com/api/v4/values#attributes
-attributes_cache = {
+attributes_map = {
     "Capacitance": "capacitance",
     "Case/Package": "case_package",
     "Contact Plating": "contactplating",
@@ -358,6 +358,10 @@ column_map = {
     "esr_frequency_high": "esr_frequency_high",
     "price": "price",
     "volume": "volume",
+    "length": "length",
+    "width": "width",
+    "height": "height",
+    "diameter": "diameter",
     "mass": "mass",
     "energy": "energy",
     "power": "power",
@@ -366,5 +370,20 @@ column_map = {
     "volumetric_power_density": "volumetric_power_density",
     "gravimetric_power_density": "gravimetric_power_density",
     "energy_per_cost": "energy_per_cost",
-    "year": "year",
 }
+
+# The following columns have data that changes yearly, so we track them separately,
+# to avoid overwriting previous year values with new year values when we merge the
+# data.
+
+# Map of the base column names (before postprocessing) along with their corresponding
+# data type. Used to determine which columns are modified to include a year in their
+# names (e.g. "part_median_price_1000_converted_price" from 2022 -> "price_2022").
+# We use this to make sure these columns are properly merged when combining CSV's from
+# multiple years.
+columns_that_update_yearly_preprocess = {"part_median_price_1000_converted_price": "float"}
+
+# List of the updated column names (after postprocessing) that include the year in
+# their names (e.g. "price" -> "price_2022", "price_2023"). We use this to make sure
+# not to drop these columns when we drop columns that are not in `column_map`
+columns_that_update_yearly_postprocess = ["price", "energy_per_cost"]

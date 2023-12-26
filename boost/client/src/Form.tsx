@@ -321,7 +321,8 @@ MPN: <b>${component.mpns[idx]}</b><br>
         })
         .then((data) => {
           const componentString = QueryParser.parse(
-            JSON.stringify(data)
+            JSON.stringify(data),
+            searchParams.get("years") || ""
           ) as unknown as string;
 
           // Convert the string to a Component object.
@@ -424,7 +425,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
             <Dropdown
               defaultText={"Select Year"}
               selectedOption={selectedYear}
-              options={["2022"]}
+              options={["2022", "2023"]}
               onSelect={setSelectedYear}
             />
           </div>

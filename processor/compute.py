@@ -2,7 +2,69 @@ import re
 
 import numpy as np
 import pandas as pd
-from categories import categories_cache, ceramic_class, column_map, dielectric_power_fit
+from categories import categories_map, ceramic_class, column_map, dielectric_power_fit
+
+
+def add_year(df: pd.DataFrame, year: str) -> pd.DataFrame:
+    """Adds a year column to the dataframe with the specified year."""
+    df["year"] = year
+    return df
+
+
+def rename_by_year(df: pd.DataFrame, columns, year: str) -> pd.DataFrame:
+    """
+    Renames specified columns by appending the year and drops the original columns.
+    For example: `price` becomes `price_2023`.
+    """
+    for col in columns:
+        year_col = f"{col}_{year}"
+        df[year_col] = df[col]
+        df.drop(columns=[col], inplace=True)
+    return df
+
+
+def merge(df: pd.DataFrame, years: list) -> pd.DataFrame:
+    """
+    Merges rows based on 'part_mpn', resolving conflicts using the most recent year.
+    Retains year-specific columns for all available years.
+    """
+    # Identify year-specific columns
+    year_columns = {year: [col for col in df.columns if col.endswith(f"_{year}")] for year in years}
+
+    # Aggregate these columns separately
+    agg_rules = {
+        col: "first" for col in df.columns if not any(col.endswith(f"_{year}") for year in years)
+    }
+    for year in years:
+        for col in year_columns[year]:
+            agg_rules[col] = "max"
+
+    # Group by 'part_mpn', sort by 'year', and aggregate
+    df.sort_values(by="year", ascending=False, inplace=True)
+    merged_df = df.groupby("part_mpn", as_index=False).agg(agg_rules).reset_index()
+
+    return merged_df
+
+
+def replace_empty_none_with_na(df):
+    """
+    Replaces all empty strings and 'None' strings in the DataFrame with pd.NA.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to process.
+
+    Returns:
+    pd.DataFrame: The processed DataFrame with replacements.
+    """
+    # Replace 'None' and empty strings with pd.NA
+    df = df.replace(["None", ""], pd.NA)
+
+    # Optional: Convert columns that are now fully NA to the most appropriate dtype
+    for col in df.columns:
+        if df[col].isna().all():
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    return df
 
 
 def _convert_to_float(entry: str):
@@ -61,9 +123,9 @@ def _convert_to_base_units(entry: str):
 
     """
     try:
-        entry = str(entry)
+        entry = str(entry).replace(" ", "")
         num = float(re.findall(r"[-+]?(?:\d+\.\d+|\d+)", entry)[0])
-        unit = re.findall(r"[a-zA-Z]+", entry)[0]
+        unit = re.findall(r"[^\d\s.,;:!?\-+\/\(\)\[\]{}]+", entry)[0]
 
         if "P" in entry:
             return num * 1e15
@@ -139,7 +201,7 @@ def classify_ceramic(df: pd.DataFrame) -> pd.DataFrame:
     Uses the CSV file in the data directory as a lookup table to find which class
     each ceramic belongs to, then creates a new column identifying the class.
     """
-    category_id = int(categories_cache["Ceramic Capacitors"])
+    category_id = int(categories_map["Ceramic Capacitors"])
     df[column_map["ceramic_class"]] = df.loc[df["part_category_id"] == category_id][
         "part_specs_dielectric_display_value"
     ].map(lambda x: ceramic_class.get(x), na_action="ignore")
@@ -158,15 +220,15 @@ def classify_dielectric(df: pd.DataFrame) -> pd.DataFrame:
     # https://en.wikipedia.org/wiki/Film_capacitor to classify.
     def _get_dielectric(row):
         category_id = row["part_category_id"]
-        if category_id == int(categories_cache["Ceramic Capacitors"]):
-            return row["ceramic_class"]
-        elif category_id == int(categories_cache["Aluminum Electrolytic Capacitors"]):
+        if category_id == int(categories_map["Ceramic Capacitors"]):
+            return row["part_specs_dielectric_display_value"]
+        elif category_id == int(categories_map["Aluminum Electrolytic Capacitors"]):
             return "aluminum"
-        elif category_id == int(categories_cache["Tantalum Capacitors"]):
+        elif category_id == int(categories_map["Tantalum Capacitors"]):
             return "tantalum"
-        elif category_id == int(categories_cache["Mica Capacitors"]):
+        elif category_id == int(categories_map["Mica Capacitors"]):
             return "mica"
-        elif category_id == int(categories_cache["Film Capacitors"]):
+        elif category_id == int(categories_map["Film Capacitors"]):
             if (
                 row["part_specs_dielectricmaterial_display_value"] == "Polyester"
                 or row["part_specs_dielectricmaterial_display_value"] == "PET"
@@ -283,9 +345,59 @@ def process_esr_frequency(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def process_price(df: pd.DataFrame) -> pd.DataFrame:
-    """Processes the price column to have a more human-readable column name"""
-    df[column_map["price"]] = df["part_median_price_1000_converted_price"]
+def process_price(df: pd.DataFrame, years: list) -> pd.DataFrame:
+    """Processes the price column for each year to have a more human-readable column name"""
+    for year in years:
+        if f"part_median_price_1000_converted_price_{year}" in df.columns:
+            df[f"{column_map['price']}_{year}"] = df[
+                f"part_median_price_1000_converted_price_{year}"
+            ]
+    return df
+
+
+def compute_height(df: pd.DataFrame) -> pd.DataFrame:
+    def _compute_height(row):
+        if pd.notna(row["part_specs_diameter_display_value"]):
+            # Anything with a `diameter` is considered cylindrical.
+            # Then prioritize `height` over `length`.
+            diameter = row["part_specs_diameter_display_value"]
+
+            # Select the height if it exists, otherwise select the length.
+            height = row["part_specs_height_display_value"]
+            if pd.isna(height):
+                height = row["part_specs_length_display_value"]
+
+            # Add height and diameter as their own columns.
+            row[column_map["height"]] = height
+            row[column_map["diameter"]] = diameter
+            return np.pi * (diameter / 2) ** 2 * height
+        else:
+            # If there is no diameter, then we assume it is rectangular.
+            # Use `length` and `width` as the first two dimensions.
+            length = row["part_specs_length_display_value"]
+            width = row["part_specs_width_display_value"]
+
+            # Then for the last dimension prioritize `height`, then
+            # `thickness`, then `depth`. If there is both a `height`
+            # and a `height_seated_max field`, then choose the min
+            # of the two.
+            height = row["part_specs_height_display_value"]
+            height_seated_max = row["part_specs_height_seated_max__display_value"]
+            if pd.notna(height) and pd.notna(height_seated_max):
+                height = min(height, height_seated_max)
+            elif pd.isna(height) and pd.notna(height_seated_max):
+                height = height_seated_max
+            elif pd.isna(height):
+                thickness = row["part_specs_thickness_display_value"]
+                height = thickness if pd.notna(thickness) else row["part_specs_depth_display_value"]
+
+            # Add length, width, and height  as their own columns.
+            row[column_map["length"]] = length
+            row[column_map["width"]] = width
+            row[column_map["height"]] = height
+            return length * width * height
+
+    df[column_map["volume"]] = df.apply(_compute_volume, axis=1)
     return df
 
 
@@ -317,7 +429,21 @@ def compute_volume(df: pd.DataFrame) -> pd.DataFrame:
             height = row["part_specs_height_display_value"]
             if pd.isna(height):
                 height = row["part_specs_length_display_value"]
-            return np.pi * (diameter / 2) ** 2 * height
+
+            # Add height and diameter as their own columns.
+            row[column_map["height"]] = height
+            row[column_map["diameter"]] = diameter
+            volume = np.pi * (diameter / 2) ** 2 * height
+            return pd.Series(
+                [volume, height, diameter, np.nan, np.nan],
+                index=[
+                    column_map["volume"],
+                    column_map["height"],
+                    column_map["diameter"],
+                    column_map["length"],
+                    column_map["width"],
+                ],
+            )
         else:
             # If there is no diameter, then we assume it is rectangular.
             # Use `length` and `width` as the first two dimensions.
@@ -332,12 +458,30 @@ def compute_volume(df: pd.DataFrame) -> pd.DataFrame:
             height_seated_max = row["part_specs_height_seated_max__display_value"]
             if pd.notna(height) and pd.notna(height_seated_max):
                 height = min(height, height_seated_max)
-            elif pd.notna(height):
+            elif pd.isna(height) and pd.notna(height_seated_max):
+                height = height_seated_max
+            elif pd.isna(height):
                 thickness = row["part_specs_thickness_display_value"]
                 height = thickness if pd.notna(thickness) else row["part_specs_depth_display_value"]
-            return length * width * height
 
-    df[column_map["volume"]] = df.apply(_compute_volume, axis=1)
+            # Add length, width, and height  as their own columns.
+            row[column_map["length"]] = length
+            row[column_map["width"]] = width
+            row[column_map["height"]] = height
+            volume = length * width * height
+            return pd.Series(
+                [volume, height, np.nan, length, width],
+                index=[
+                    column_map["volume"],
+                    column_map["height"],
+                    column_map["diameter"],
+                    column_map["length"],
+                    column_map["width"],
+                ],
+            )
+
+    volume_data = df.apply(_compute_volume, axis=1)
+    df = pd.concat([df, volume_data], axis=1)
     return df
 
 
@@ -351,28 +495,31 @@ def compute_mass(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     def _compute_mass(row):
-        if pd.notna(row["ceramic_class"]) and row["ceramic_class"] in ("C1", "C2"):
-            ceramic_class_str = row["ceramic_class"]
+        if pd.notna(row[column_map["ceramic_class"]]) and row[column_map["ceramic_class"]] in (
+            "C1",
+            "C2",
+        ):
+            ceramic_class_str = row[column_map["ceramic_class"]]
             params = dielectric_power_fit[ceramic_class_str]
-            if row["voltage"] != 0 and row["current"] != 0:
+            if row[column_map["voltage"]] != 0 and row[column_map["current"]] != 0:
                 return (
                     params["k"]
-                    * (row["voltage"] ** params["alpha"])
-                    * (row["capacitance"] ** params["beta"])
-                    * row["volume"]
+                    * (row[column_map["voltage"]] ** params["alpha"])
+                    * (row[column_map["capacitance"]] ** params["beta"])
+                    * row[column_map["volume"]]
                 )
-        elif pd.notna(row["dielectric"]):
+        elif pd.notna(row[column_map["dielectric"]]):
             # Check if the dielectric is PP or PET. If so, use the
             # power fit equation for those materials.
-            dielectric = row["dielectric"]
+            dielectric = row[column_map["dielectric"]]
             if dielectric in ("PP", "PET", "aluminum", "tantalum"):
                 params = dielectric_power_fit[dielectric]
-                if row["voltage"] != 0 and row["current"] != 0:
+                if row[column_map["voltage"]] != 0 and row[column_map["current"]] != 0:
                     return (
                         params["k"]
-                        * (row["voltage"] ** params["alpha"])
-                        * (row["capacitance"] ** params["beta"])
-                        * row["volume"]
+                        * (row[column_map["voltage"]] ** params["alpha"])
+                        * (row[column_map["capacitance"]] ** params["beta"])
+                        * row[column_map["volume"]]
                     )
 
     df[column_map["mass"]] = df.apply(_compute_mass, axis=1)
@@ -386,8 +533,8 @@ def compute_energy(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     def _compute_energy(row):
-        if row["voltage"] != 0:
-            return 0.5 * row["capacitance"] * (row["voltage"] ** 2)
+        if row[column_map["voltage"]] != 0:
+            return 0.5 * row[column_map["capacitance"]] * (row[column_map["voltage"]] ** 2)
 
     df[column_map["energy"]] = df.apply(_compute_energy, axis=1)
     return df
@@ -402,7 +549,7 @@ def compute_rated_power(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     def _compute_power(row):
-        return row["voltage"] * row["current"]
+        return row[column_map["voltage"]] * row[column_map["current"]]
 
     df[column_map["power"]] = df.apply(_compute_power, axis=1)
     return df
@@ -415,8 +562,8 @@ def compute_volumetric_energy_density(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     def _compute_energy_density(row):
-        if row["volume"] != 0:
-            return row["energy"] / row["volume"]
+        if row[column_map["volume"]] != 0:
+            return row[column_map["energy"]] / row[column_map["volume"]]
 
     df[column_map["volumetric_energy_density"]] = df.apply(_compute_energy_density, axis=1)
     return df
@@ -429,8 +576,8 @@ def compute_gravimetric_energy_density(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     def _compute_energy_density(row):
-        if row["mass"] != 0:
-            return row["energy"] / row["mass"]
+        if row[column_map["mass"]] != 0:
+            return row[column_map["energy"]] / row[column_map["mass"]]
 
     df[column_map["gravimetric_energy_density"]] = df.apply(_compute_energy_density, axis=1)
     return df
@@ -443,8 +590,8 @@ def compute_volumetric_power_density(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     def _compute_power_density(row):
-        if row["volume"] != 0:
-            return row["power"] / row["volume"]
+        if row[column_map["volume"]] != 0:
+            return row[column_map["power"]] / row[column_map["volume"]]
 
     df[column_map["volumetric_power_density"]] = df.apply(_compute_power_density, axis=1)
     return df
@@ -457,24 +604,27 @@ def compute_gravimetric_power_density(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     def _compute_power_density(row):
-        if row["mass"] != 0:
-            return row["power"] / row["mass"]
+        if row[column_map["mass"]] != 0:
+            return row[column_map["power"]] / row[column_map["mass"]]
 
     df[column_map["gravimetric_power_density"]] = df.apply(_compute_power_density, axis=1)
     return df
 
 
-def compute_energy_per_cost(df: pd.DataFrame) -> pd.DataFrame:
+def compute_energy_per_cost(df: pd.DataFrame, years: list) -> pd.DataFrame:
     """
     Computes the energy per cost of the component using the formula:
     Energy per cost = E / C, where C is the median price per 1000.
     """
 
-    def _compute_energy_per_cost(row):
-        if row["price"] != 0:
-            return row["energy"] / row["price"]
+    def _compute_energy_per_cost(row, year):
+        if row[f"{column_map['price']}_{year}"] != 0:
+            return row["energy"] / row[f"{column_map['price']}_{year}"]
 
-    df[column_map["energy_per_cost"]] = df.apply(_compute_energy_per_cost, axis=1)
+    for year in years:
+        df[f"{column_map['energy_per_cost']}_{year}"] = df.apply(
+            _compute_energy_per_cost, axis=1, args=(year,)
+        )
     return df
 
 

@@ -107,8 +107,9 @@ impl QueryGenerator {
             .iter()
             .map(|s| s.as_string().unwrap_or_default())
             .collect::<Vec<String>>();
+        let quoted_year = format!("\"{}\"", year);
 
-        let mut query = "SELECT mpn, manufacturer, year, ".to_string();
+        let mut query = format!("SELECT mpn, manufacturer, {}, ", quoted_year);
         let mut query_end = "".to_string();
         attributes.iter().enumerate().for_each(|(i, attr)| {
             query = format!("{}{}", query, attr);
@@ -130,9 +131,9 @@ impl QueryGenerator {
             query,
             " FROM public.final WHERE (",
             Self::interpret_category(category),
-            " AND year=",
-            year,
-            ") AND (",
+            " AND ",
+            quoted_year,
+            "='True') AND (",
             query_end,
             ");"
         );
@@ -163,7 +164,7 @@ impl QueryParser {
     //          ],
     //   "6332": [ ... ]
     // }
-    pub fn parse(result: &str) -> String {
+    pub fn parse(result: &str, year: String) -> String {
         let result: Value = from_str(&result).expect("Failed to parse JSON from server response");
         let result = result
             .as_object()
@@ -171,6 +172,9 @@ impl QueryParser {
         let mut output = componet::graph::Components {
             components: Vec::new(),
         };
+        if year.is_empty() {
+            return "{}".to_string();
+        }
 
         // If the result is empty, we return an empty string.
         if result
@@ -196,7 +200,7 @@ impl QueryParser {
             .as_object()
             .unwrap()
             .keys()
-            .filter(|k| k != &"mpn" && k != &"manufacturer" && k != &"year")
+            .filter(|k| k != &"mpn" && k != &"manufacturer" && k != &&year)
             .collect::<Vec<&String>>();
 
         // Go through each category and parse the data.
@@ -236,7 +240,7 @@ impl QueryParser {
                 .map(|d| {
                     d.as_object()
                         .unwrap()
-                        .get("year")
+                        .get(&year)
                         .unwrap()
                         .as_str()
                         .unwrap()
