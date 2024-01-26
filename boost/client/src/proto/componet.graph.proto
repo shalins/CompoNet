@@ -15,10 +15,10 @@ message Axis {
 
 message Component {
 	string name = 1;
-	repeated Axis axes = 2;
-	repeated string mpns = 3;
-	repeated string manufacturers = 4;
-	repeated string years = 5;
+	string year = 2;
+	repeated Axis axes = 3;
+	repeated string mpns = 4;
+	repeated string manufacturers = 5;
 }
 
 message Components {

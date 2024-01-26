@@ -29,7 +29,7 @@
     "yarn": "v2.4.3"
   },
   "scripts": {
-		"proto": "mkdir -p ./src/proto/ts/ && protoc --ts_proto_opt=esModuleInterop=true --plugin=./node_modules/.bin/protoc-gen-ts_proto --proto_path=./src/proto/ --ts_proto_out=./src/proto/ts/ ./src/proto/*.proto",
+    "proto": "mkdir -p ./src/proto/ts/ && protoc --ts_proto_opt=esModuleInterop=true --plugin=./node_modules/.bin/protoc-gen-ts_proto --proto_path=./src/proto/ --ts_proto_out=./src/proto/ts/ ./src/proto/*.proto",
     "build-rs": "cargo build --release && wasm-bindgen target/wasm32-unknown-unknown/release/componet.wasm --target=web --out-dir=componet --omit-default-module-path && cp componet/componet_bg.wasm public/",
     "debug": "yarn proto && yarn build-rs && react-scripts start",
     "start": "react-scripts start",

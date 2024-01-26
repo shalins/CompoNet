@@ -13,6 +13,7 @@ import PlotTrace from "./Trace";
 import PlotPoint from "./Point";
 import Alert from "./Alert";
 import { Trace, Point, Axis } from "./utils/types";
+import { YEARS } from "./utils/consts";
 
 export default function GraphForm() {
   // Selection Parameters
@@ -178,7 +179,7 @@ export default function GraphForm() {
         return `
 MPN: <b>${component.mpns[idx]}</b><br>
 				Manufacturer: <b>${component.manufacturers[idx]}</b><br>
-				Year: <b>${component.years[idx]}</b><br>
+				Year: <b>${component.year}</b><br>
 				`;
       });
       const plotSettings: { [key: string]: any } = {
@@ -192,7 +193,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
 			%{xaxis.title.text}: %{x} <br>
 			<extra></extra>
 		`,
-        name: component.name
+        name: `${component.name} (${component.year})`
           .replace(" Capacitors", "")
           .replace(" Inductors", ""),
         type: "scattergl",
@@ -200,8 +201,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
         marker: {
           color: new Array(component.mpns.length).fill(
             plotTraces.find(
-              // Just grab the first year since all components in the trace have the same year.
-              (t) => t.title === component.name && t.year === component.years[0]
+              (t) => t.title === component.name && t.year === component.year
             )?.color ?? "black"
           ),
           symbol: new Array(component.mpns.length).fill("circle"),
@@ -322,7 +322,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
         .then((data) => {
           const componentString = QueryParser.parse(
             JSON.stringify(data),
-            searchParams.get("years") || ""
+            YEARS,
           ) as unknown as string;
 
           // Convert the string to a Component object.
@@ -356,7 +356,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
             const trace = plotTraces.find(
               (t) =>
                 !components?.find(
-                  (c) => c.name === t.title && c.years[0] === t.year
+                  (c) => c.name === t.title && c.year === t.year
                 )
             );
             if (trace) {
@@ -425,7 +425,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
             <Dropdown
               defaultText={"Select Year"}
               selectedOption={selectedYear}
-              options={["2022", "2023"]}
+              options={YEARS}
               onSelect={setSelectedYear}
             />
           </div>

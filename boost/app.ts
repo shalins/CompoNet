@@ -3,7 +3,6 @@ import express from "express";
 import log from "loglevel";
 import { Pool } from "pg";
 import fs from "fs";
-//import { generateQuery } from "./client/src/utils/queries";
 import {
   default as init,
   QueryGenerator,
@@ -41,15 +40,10 @@ init(wasmFile)
       try {
         const client = await pool.connect();
 
-        // Try a test query
-        //const query = generate_query("test category", [
-        //  "test attribute 1", "test attribute 2",
-        //]);
-        //console.log("Test Query:", query);
-
         const categories = toArray(req.query.categories);
         const years = toArray(req.query.years);
         const attributes = toArray(req.query.attributes);
+
         let response: { [key: string]: any } = {};
         for (let i = 0; i < categories.length; i++) {
           const query = QueryGenerator.generate(
@@ -58,8 +52,8 @@ init(wasmFile)
             attributes
           );
           const result = await client.query(query);
-          console.log("QUERY SUCCEEDED:", query, result);
-          response[categories[i]] = result?.rows;
+          console.log("QUERY SUCCEEDED:", query);
+          response[`${categories[i]}_${years[i]}`] = result?.rows;
         }
 
         res.send(response);

@@ -18,7 +18,7 @@ export default function PlotTrace({ trace, onRemove }: TraceProps) {
           }}
         ></div>
       </div>
-      <span className="pr-4">{trace.title}</span>
+      <span className="pr-4">{trace.title} ({trace.year})</span>
       <button className="hover:bg-gray-100" onClick={() => onRemove(trace)}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
