@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { useOutsideClick } from "./hooks/useOutsideClick";
+import { useOutsideClick } from "../hooks/useOutsideClick";
 
 interface DropdownProps {
   defaultText: string;

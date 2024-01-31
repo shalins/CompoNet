@@ -1,4 +1,4 @@
-import Form from "../Form";
+import Form from "../interface/Form";
 import React from "react";
 
 export default function HomePage() {

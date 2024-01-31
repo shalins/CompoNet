@@ -55,75 +55,110 @@ export const Axis = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Axis {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAxis();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.shortname = reader.string();
-          break;
+          continue;
         case 3:
-          if ((tag & 7) === 2) {
+          if (tag === 25) {
+            message.data.push(reader.double());
+
+            continue;
+          }
+
+          if (tag === 26) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.data.push(reader.double());
             }
-          } else {
-            message.data.push(reader.double());
+
+            continue;
           }
+
           break;
         case 4:
+          if (tag !== 32) {
+            break;
+          }
+
           message.affix = reader.int32() as any;
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.unit = reader.string();
-          break;
+          continue;
         case 6:
+          if (tag !== 48) {
+            break;
+          }
+
           message.computed = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Axis {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      shortname: isSet(object.shortname) ? String(object.shortname) : "",
-      data: Array.isArray(object?.data) ? object.data.map((e: any) => Number(e)) : [],
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      shortname: isSet(object.shortname) ? globalThis.String(object.shortname) : "",
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => globalThis.Number(e)) : [],
       affix: isSet(object.affix) ? affixFromJSON(object.affix) : undefined,
-      unit: isSet(object.unit) ? String(object.unit) : undefined,
-      computed: isSet(object.computed) ? Boolean(object.computed) : false,
+      unit: isSet(object.unit) ? globalThis.String(object.unit) : undefined,
+      computed: isSet(object.computed) ? globalThis.Boolean(object.computed) : false,
     };
   },
 
   toJSON(message: Axis): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.shortname !== undefined && (obj.shortname = message.shortname);
-    if (message.data) {
-      obj.data = message.data.map((e) => e);
-    } else {
-      obj.data = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    message.affix !== undefined && (obj.affix = message.affix !== undefined ? affixToJSON(message.affix) : undefined);
-    message.unit !== undefined && (obj.unit = message.unit);
-    message.computed !== undefined && (obj.computed = message.computed);
+    if (message.shortname !== "") {
+      obj.shortname = message.shortname;
+    }
+    if (message.data?.length) {
+      obj.data = message.data;
+    }
+    if (message.affix !== undefined) {
+      obj.affix = affixToJSON(message.affix);
+    }
+    if (message.unit !== undefined) {
+      obj.unit = message.unit;
+    }
+    if (message.computed === true) {
+      obj.computed = message.computed;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Axis>, I>>(base?: I): Axis {
-    return Axis.fromPartial(base ?? {});
+    return Axis.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Axis>, I>>(object: I): Axis {
     const message = createBaseAxis();
     message.name = object.name ?? "";
@@ -161,71 +196,91 @@ export const Component = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Component {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseComponent();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.year = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.axes.push(Axis.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.mpns.push(reader.string());
-          break;
+          continue;
         case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.manufacturers.push(reader.string());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Component {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      year: isSet(object.year) ? String(object.year) : "",
-      axes: Array.isArray(object?.axes) ? object.axes.map((e: any) => Axis.fromJSON(e)) : [],
-      mpns: Array.isArray(object?.mpns) ? object.mpns.map((e: any) => String(e)) : [],
-      manufacturers: Array.isArray(object?.manufacturers) ? object.manufacturers.map((e: any) => String(e)) : [],
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      year: isSet(object.year) ? globalThis.String(object.year) : "",
+      axes: globalThis.Array.isArray(object?.axes) ? object.axes.map((e: any) => Axis.fromJSON(e)) : [],
+      mpns: globalThis.Array.isArray(object?.mpns) ? object.mpns.map((e: any) => globalThis.String(e)) : [],
+      manufacturers: globalThis.Array.isArray(object?.manufacturers)
+        ? object.manufacturers.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
   toJSON(message: Component): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.year !== undefined && (obj.year = message.year);
-    if (message.axes) {
-      obj.axes = message.axes.map((e) => e ? Axis.toJSON(e) : undefined);
-    } else {
-      obj.axes = [];
+    if (message.name !== "") {
+      obj.name = message.name;
     }
-    if (message.mpns) {
-      obj.mpns = message.mpns.map((e) => e);
-    } else {
-      obj.mpns = [];
+    if (message.year !== "") {
+      obj.year = message.year;
     }
-    if (message.manufacturers) {
-      obj.manufacturers = message.manufacturers.map((e) => e);
-    } else {
-      obj.manufacturers = [];
+    if (message.axes?.length) {
+      obj.axes = message.axes.map((e) => Axis.toJSON(e));
+    }
+    if (message.mpns?.length) {
+      obj.mpns = message.mpns;
+    }
+    if (message.manufacturers?.length) {
+      obj.manufacturers = message.manufacturers;
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Component>, I>>(base?: I): Component {
-    return Component.fromPartial(base ?? {});
+    return Component.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Component>, I>>(object: I): Component {
     const message = createBaseComponent();
     message.name = object.name ?? "";
@@ -250,43 +305,47 @@ export const Components = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Components {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseComponents();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.components.push(Component.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Components {
     return {
-      components: Array.isArray(object?.components) ? object.components.map((e: any) => Component.fromJSON(e)) : [],
+      components: globalThis.Array.isArray(object?.components)
+        ? object.components.map((e: any) => Component.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: Components): unknown {
     const obj: any = {};
-    if (message.components) {
-      obj.components = message.components.map((e) => e ? Component.toJSON(e) : undefined);
-    } else {
-      obj.components = [];
+    if (message.components?.length) {
+      obj.components = message.components.map((e) => Component.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Components>, I>>(base?: I): Components {
-    return Components.fromPartial(base ?? {});
+    return Components.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Components>, I>>(object: I): Components {
     const message = createBaseComponents();
     message.components = object.components?.map((e) => Component.fromPartial(e)) || [];
@@ -297,7 +356,8 @@ export const Components = {
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

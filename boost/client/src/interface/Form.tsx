@@ -1,19 +1,19 @@
-import { ChangeEvent } from "react";
 import plotComponentFactory from "react-plotly.js/factory";
 import Plotly from "plotly.js/dist/plotly";
 
 import { useEffect, useState } from "react";
 import { QueryParser } from "componet/componet";
-import { Components, Component } from "./proto/ts/componet.graph";
-import { ColumnType } from "./proto/ts/componet.metadata";
-import { Affix } from "./proto/ts/componet";
-import { COLUMNS } from "./utils/octopart";
+import { Components, Component } from "../proto/ts/componet.graph";
+import { ColumnType } from "../proto/ts/componet.metadata";
+import { Affix } from "../proto/ts/componet";
+import { COLUMNS } from "../utils/octopart";
 import Dropdown from "./Dropdown";
 import PlotTrace from "./Trace";
 import PlotPoint from "./Point";
 import Alert from "./Alert";
-import { Trace, Point, Axis } from "./utils/types";
-import { YEARS } from "./utils/consts";
+import { Trace, Point, Axis } from "../utils/types";
+import { YEARS } from "../utils/consts";
+import { LegendConstants, MarkerConstants, PlotConstants } from "./plot/consts";
 
 export default function GraphForm() {
   // Selection Parameters
@@ -38,19 +38,6 @@ export default function GraphForm() {
 
   // Error messages
   const [alertMessage, setAlertMessage] = useState<string>();
-
-  const traceColors = [
-    "#1f77b4",
-    "#ff7f0e",
-    "#2ca02c",
-    "#d62728",
-    "#9467bd",
-    "#8c564b",
-    "#e377c2",
-    "#7f7f7f",
-    "#bcbd22",
-    "#17becf",
-  ];
 
   const handleSelectedAttribute = (selectedAttribute: string, axis: Axis) => {
     const name = COLUMNS.find(
@@ -79,16 +66,16 @@ export default function GraphForm() {
     };
     setPlotComponent((prev) => [...prev, point]);
 
-    plotData[fullDataIdx].marker.color[ptIdx] = "black";
-    plotData[fullDataIdx].marker.size[ptIdx] = "10";
-    plotData[fullDataIdx].marker.symbol[ptIdx] = "x";
+    plotData[fullDataIdx].marker.color[ptIdx] = MarkerConstants.selectColor;
+    plotData[fullDataIdx].marker.size[ptIdx] = MarkerConstants.selectSize;
+    plotData[fullDataIdx].marker.symbol[ptIdx] = MarkerConstants.selectSymbol;
   };
 
   const onPlotDeselectPoint = (point: Point, i: number) => {
     setPlotComponent((prev) => {
       plotData[point.fullDataIdx].marker.color[point.ptIdx] = point.color;
-      plotData[point.fullDataIdx].marker.size[point.ptIdx] = "5";
-      plotData[point.fullDataIdx].marker.symbol[point.ptIdx] = "circle";
+      plotData[point.fullDataIdx].marker.size[point.ptIdx] = MarkerConstants.normalSize;
+      plotData[point.fullDataIdx].marker.symbol[point.ptIdx] = MarkerConstants.normalSymbol;
       return prev.filter((_, index) => index !== i);
     });
   };
@@ -106,7 +93,7 @@ export default function GraphForm() {
     // Create a Trace from the different selections
     const trace: Trace = {
       title: selectedComponent,
-      color: traceColors[plotTraces.length],
+      color: MarkerConstants.traceColors[plotTraces.length],
       year: selectedYear,
     };
 
@@ -132,7 +119,7 @@ export default function GraphForm() {
     setLoading(true);
     setPlotTraces((prev) => {
       const p = prev.filter((t) => t !== trace);
-      p.forEach((t, i) => (t.color = traceColors[i]));
+      p.forEach((t, i) => (t.color = MarkerConstants.traceColors[i]));
       return p;
     });
 
@@ -202,10 +189,13 @@ MPN: <b>${component.mpns[idx]}</b><br>
           color: new Array(component.mpns.length).fill(
             plotTraces.find(
               (t) => t.title === component.name && t.year === component.year
-            )?.color ?? "black"
+            )?.color ?? MarkerConstants.defaultTraceColor
           ),
-          symbol: new Array(component.mpns.length).fill("circle"),
-          size: new Array(component.mpns.length).fill(5),
+          size: new Array(component.mpns.length).fill(MarkerConstants.normalSize),
+          line: {
+            width: MarkerConstants.borderSize,
+          },
+          opacity: MarkerConstants.opacity,
         },
       };
       if (component.axes?.length > 2) {
@@ -254,19 +244,19 @@ MPN: <b>${component.mpns[idx]}</b><br>
         showline: true,
       },
       font: {
-        family: "Times New Roman",
-        size: 12,
-        color: "#000000",
+        family: PlotConstants.fontFamily,
+        size: PlotConstants.fontSize,
+        color: PlotConstants.fontColor,
       },
       showlegend: true,
       legend: {
-        x: 0.7,
-        y: 0.05,
-        bordercolor: "#000000",
-        borderwidth: 1,
+        x: LegendConstants.location.x,
+        y: LegendConstants.location.y,
+        bordercolor: LegendConstants.borderColor,
+        borderwidth: LegendConstants.borderWidth,
         itemsizing: "constant",
         marker: {
-          size: 2,
+          size: LegendConstants.markerSize,
         },
       },
     };

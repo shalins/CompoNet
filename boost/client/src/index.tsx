@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import App from "./App";
+import App from "./interface/App";
 import { default as init } from "componet/componet";
 
 init("componet_bg.wasm").then(() => {

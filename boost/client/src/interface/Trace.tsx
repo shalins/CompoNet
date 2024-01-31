@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Trace } from "./utils/types";
+import React from "react";
+import { Trace } from "../utils/types";
 
 interface TraceProps {
   trace: Trace;

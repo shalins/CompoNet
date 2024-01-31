@@ -117,74 +117,122 @@ export const DatabaseMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DatabaseMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDatabaseMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.column = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 24) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.unit = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag !== 40) {
+            break;
+          }
+
           message.affix = reader.int32() as any;
-          break;
+          continue;
         case 6:
+          if (tag !== 48) {
+            break;
+          }
+
           message.id = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 7:
+          if (tag !== 56) {
+            break;
+          }
+
           message.included = reader.bool();
-          break;
+          continue;
         case 8:
+          if (tag !== 64) {
+            break;
+          }
+
           message.computed = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): DatabaseMetadata {
     return {
-      name: isSet(object.name) ? String(object.name) : "",
-      column: isSet(object.column) ? String(object.column) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      column: isSet(object.column) ? globalThis.String(object.column) : "",
       type: isSet(object.type) ? columnTypeFromJSON(object.type) : 0,
-      unit: isSet(object.unit) ? String(object.unit) : undefined,
+      unit: isSet(object.unit) ? globalThis.String(object.unit) : undefined,
       affix: isSet(object.affix) ? affixFromJSON(object.affix) : undefined,
-      id: isSet(object.id) ? Number(object.id) : undefined,
-      included: isSet(object.included) ? Boolean(object.included) : false,
-      computed: isSet(object.computed) ? Boolean(object.computed) : undefined,
+      id: isSet(object.id) ? globalThis.Number(object.id) : undefined,
+      included: isSet(object.included) ? globalThis.Boolean(object.included) : false,
+      computed: isSet(object.computed) ? globalThis.Boolean(object.computed) : undefined,
     };
   },
 
   toJSON(message: DatabaseMetadata): unknown {
     const obj: any = {};
-    message.name !== undefined && (obj.name = message.name);
-    message.column !== undefined && (obj.column = message.column);
-    message.type !== undefined && (obj.type = columnTypeToJSON(message.type));
-    message.unit !== undefined && (obj.unit = message.unit);
-    message.affix !== undefined && (obj.affix = message.affix !== undefined ? affixToJSON(message.affix) : undefined);
-    message.id !== undefined && (obj.id = Math.round(message.id));
-    message.included !== undefined && (obj.included = message.included);
-    message.computed !== undefined && (obj.computed = message.computed);
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.column !== "") {
+      obj.column = message.column;
+    }
+    if (message.type !== 0) {
+      obj.type = columnTypeToJSON(message.type);
+    }
+    if (message.unit !== undefined) {
+      obj.unit = message.unit;
+    }
+    if (message.affix !== undefined) {
+      obj.affix = affixToJSON(message.affix);
+    }
+    if (message.id !== undefined) {
+      obj.id = Math.round(message.id);
+    }
+    if (message.included === true) {
+      obj.included = message.included;
+    }
+    if (message.computed !== undefined) {
+      obj.computed = message.computed;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<DatabaseMetadata>, I>>(base?: I): DatabaseMetadata {
-    return DatabaseMetadata.fromPartial(base ?? {});
+    return DatabaseMetadata.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<DatabaseMetadata>, I>>(object: I): DatabaseMetadata {
     const message = createBaseDatabaseMetadata();
     message.name = object.name ?? "";
@@ -221,54 +269,78 @@ export const OctopartMetadata = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OctopartMetadata {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseOctopartMetadata();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 8) {
+            break;
+          }
+
           message.id = longToNumber(reader.int64() as Long);
-          break;
+          continue;
         case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.shortname = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.units = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): OctopartMetadata {
     return {
-      id: isSet(object.id) ? Number(object.id) : 0,
-      name: isSet(object.name) ? String(object.name) : "",
-      shortname: isSet(object.shortname) ? String(object.shortname) : undefined,
-      units: isSet(object.units) ? String(object.units) : undefined,
+      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      shortname: isSet(object.shortname) ? globalThis.String(object.shortname) : undefined,
+      units: isSet(object.units) ? globalThis.String(object.units) : undefined,
     };
   },
 
   toJSON(message: OctopartMetadata): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = Math.round(message.id));
-    message.name !== undefined && (obj.name = message.name);
-    message.shortname !== undefined && (obj.shortname = message.shortname);
-    message.units !== undefined && (obj.units = message.units);
+    if (message.id !== 0) {
+      obj.id = Math.round(message.id);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.shortname !== undefined) {
+      obj.shortname = message.shortname;
+    }
+    if (message.units !== undefined) {
+      obj.units = message.units;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<OctopartMetadata>, I>>(base?: I): OctopartMetadata {
-    return OctopartMetadata.fromPartial(base ?? {});
+    return OctopartMetadata.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<OctopartMetadata>, I>>(object: I): OctopartMetadata {
     const message = createBaseOctopartMetadata();
     message.id = object.id ?? 0;
@@ -292,43 +364,47 @@ export const Columns = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Columns {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseColumns();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.columns.push(DatabaseMetadata.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Columns {
     return {
-      columns: Array.isArray(object?.columns) ? object.columns.map((e: any) => DatabaseMetadata.fromJSON(e)) : [],
+      columns: globalThis.Array.isArray(object?.columns)
+        ? object.columns.map((e: any) => DatabaseMetadata.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: Columns): unknown {
     const obj: any = {};
-    if (message.columns) {
-      obj.columns = message.columns.map((e) => e ? DatabaseMetadata.toJSON(e) : undefined);
-    } else {
-      obj.columns = [];
+    if (message.columns?.length) {
+      obj.columns = message.columns.map((e) => DatabaseMetadata.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Columns>, I>>(base?: I): Columns {
-    return Columns.fromPartial(base ?? {});
+    return Columns.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Columns>, I>>(object: I): Columns {
     const message = createBaseColumns();
     message.columns = object.columns?.map((e) => DatabaseMetadata.fromPartial(e)) || [];
@@ -349,26 +425,31 @@ export const Categories = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Categories {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCategories();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.categories.push(OctopartMetadata.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Categories {
     return {
-      categories: Array.isArray(object?.categories)
+      categories: globalThis.Array.isArray(object?.categories)
         ? object.categories.map((e: any) => OctopartMetadata.fromJSON(e))
         : [],
     };
@@ -376,18 +457,15 @@ export const Categories = {
 
   toJSON(message: Categories): unknown {
     const obj: any = {};
-    if (message.categories) {
-      obj.categories = message.categories.map((e) => e ? OctopartMetadata.toJSON(e) : undefined);
-    } else {
-      obj.categories = [];
+    if (message.categories?.length) {
+      obj.categories = message.categories.map((e) => OctopartMetadata.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Categories>, I>>(base?: I): Categories {
-    return Categories.fromPartial(base ?? {});
+    return Categories.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Categories>, I>>(object: I): Categories {
     const message = createBaseCategories();
     message.categories = object.categories?.map((e) => OctopartMetadata.fromPartial(e)) || [];
@@ -408,26 +486,31 @@ export const Attributes = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Attributes {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseAttributes();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag !== 10) {
+            break;
+          }
+
           message.attributes.push(OctopartMetadata.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
 
   fromJSON(object: any): Attributes {
     return {
-      attributes: Array.isArray(object?.attributes)
+      attributes: globalThis.Array.isArray(object?.attributes)
         ? object.attributes.map((e: any) => OctopartMetadata.fromJSON(e))
         : [],
     };
@@ -435,18 +518,15 @@ export const Attributes = {
 
   toJSON(message: Attributes): unknown {
     const obj: any = {};
-    if (message.attributes) {
-      obj.attributes = message.attributes.map((e) => e ? OctopartMetadata.toJSON(e) : undefined);
-    } else {
-      obj.attributes = [];
+    if (message.attributes?.length) {
+      obj.attributes = message.attributes.map((e) => OctopartMetadata.toJSON(e));
     }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<Attributes>, I>>(base?: I): Attributes {
-    return Attributes.fromPartial(base ?? {});
+    return Attributes.fromPartial(base ?? ({} as any));
   },
-
   fromPartial<I extends Exact<DeepPartial<Attributes>, I>>(object: I): Attributes {
     const message = createBaseAttributes();
     message.attributes = object.attributes?.map((e) => OctopartMetadata.fromPartial(e)) || [];
@@ -454,29 +534,11 @@ export const Attributes = {
   },
 };
 
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var tsProtoGlobalThis: any = (() => {
-  if (typeof globalThis !== "undefined") {
-    return globalThis;
-  }
-  if (typeof self !== "undefined") {
-    return self;
-  }
-  if (typeof window !== "undefined") {
-    return window;
-  }
-  if (typeof global !== "undefined") {
-    return global;
-  }
-  throw "Unable to locate global object";
-})();
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
@@ -485,8 +547,8 @@ export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function longToNumber(long: Long): number {
-  if (long.gt(Number.MAX_SAFE_INTEGER)) {
-    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  if (long.gt(globalThis.Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
   }
   return long.toNumber();
 }

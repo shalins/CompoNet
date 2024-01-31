@@ -1,5 +1,5 @@
 import React from "react";
-import { Point } from "./utils/types";
+import { Point } from "../utils/types";
 
 interface PointProps {
   point: Point;
