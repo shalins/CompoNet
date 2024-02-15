@@ -32,7 +32,7 @@ export default function Dropdown({
       <div>
         <button
           type="button"
-          className="inline-flex justify-between items-center w-full px-4 py-4 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          className="inline-flex justify-between items-center w-full px-4 py-4 text-base font-semibold text-gray-700 bg-white hover:bg-gray-50"
           id="options-menu"
           aria-haspopup="true"
           aria-expanded="true"
@@ -60,7 +60,7 @@ export default function Dropdown({
         <div className="w-full bg-white focus:outline-none absolute z-10 border-2 border-black">
           {options.map((option) => (
             <button
-              className="text-left block w-full px-4 py-4 text-sm text-gray-700 hover:bg-gray-200 hover:text-gray-900 border-t border-black"
+              className="text-left block w-full px-4 py-4 text-base text-gray-700 hover:bg-gray-200 hover:text-gray-900 border-t border-black"
               role="menuitem"
               onClick={() => handleSelectOption(option)}
               key={options.indexOf(option)}

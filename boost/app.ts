@@ -12,6 +12,7 @@ import {
 const wasmFile = fs.readFileSync(
   path.join(__dirname, "client/public/componet_bg.wasm")
 );
+
 init(wasmFile)
   .then(() => {
     set_panic_hook();
@@ -75,16 +76,16 @@ init(wasmFile)
 
     app.get("/api", fetchData);
 
-    // Listen on the specified port.
-    const server = app.listen(port, () => {
-      console.log(`CompoNet PostgreSQL Server Listening on Port ${port}`);
-    });
-
     // Have node serve the files for our built React app
     app.use(express.static(path.resolve(__dirname, "./client/build")));
 
     // If we don't recognize the route, render the React app
     app.get("*", (req, res) => {
       res.sendFile(path.resolve(__dirname, "./client/build", "index.html"));
+    });
+
+    // Listen on the specified port.
+    app.listen(port, () => {
+      console.log(`CompoNet PostgreSQL Server Listening on Port ${port}`);
     });
   });

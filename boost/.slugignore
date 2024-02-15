@@ -1,0 +1,44 @@
+# This file specifies patterns that will be ignored during the Heroku deployment process for Componet
+
+# Development and Build Artifacts
+
+.git
+.github
+.dvc
+.env*
+.*cache\*
+\*.log
+**/\*.git
+**/.github
+\*\*/.dvc
+\*\*/.env
+
+# Dependency Directories
+
+node_modules
+data
+storage-api
+**/\*node_modules
+**/\*data
+target
+\*\*/\*target
+\*\*/\*storage-api
+
+# Documentation and Source Files
+
+\*.md
+\*.rst
+
+# Sourcemaps
+
+.js.map
+\*.js.map
+
+# Testing and Debugging Files
+
+test
+tests
+testing
+**/\*test
+**/*tests
+\*\*/*testing

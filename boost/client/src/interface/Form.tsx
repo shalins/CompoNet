@@ -151,6 +151,7 @@ export default function GraphForm() {
     layout: plotLayout,
     onClick: onPlotSelectPoint,
     useResizeHandler: true,
+    config: {displaylogo: false},
   };
   const Plot = plotComponentFactory(Plotly);
 
@@ -192,6 +193,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
             )?.color ?? MarkerConstants.defaultTraceColor
           ),
           size: new Array(component.mpns.length).fill(MarkerConstants.normalSize),
+          symbol: new Array(component.mpns.length).fill(MarkerConstants.normalSymbol),
           line: {
             width: MarkerConstants.borderSize,
           },
@@ -209,12 +211,16 @@ MPN: <b>${component.mpns[idx]}</b><br>
   };
 
   const graphLayout = (components: Component[]) => {
+    console.log("IS THIS COMPUTED?", components[0].axes[0]?.computed);
+    console.log("IS THIS COMPUTED?", components[0].axes[1]?.computed);
     const layout: { [key: string]: any } = {
       autosize: true,
       xaxis: {
         title: xAxisAttribute + ` [${components[0].axes[0]?.unit}]`,
         type: "log",
         autorange: true,
+        automargin: true,
+        tickformat: components[0].axes[0]?.computed ? ',.2r' : '', 
         ticksuffix:
           components[0].axes[0]?.affix === Affix.SUFFIX
             ? components[0].axes[0]?.unit
@@ -231,6 +237,8 @@ MPN: <b>${component.mpns[idx]}</b><br>
         title: yAxisAttribute + ` [${components[0].axes[1]?.unit}]`,
         type: "log",
         autorange: true,
+        automargin: true,
+        tickformat: components[0].axes[1]?.computed ? ',.2r' : '', 
         ticksuffix:
           components[0].axes[1]?.affix === Affix.SUFFIX
             ? components[0].axes[1]?.unit
@@ -421,7 +429,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
           </div>
           <div className="col-span-1 px-2">
             <button
-              className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-4 px-4"
+              className="w-full bg-founders-rock hover:bg-founders-rock-600 text-white font-bold py-4 px-4"
               onClick={addToPlot}
             >
               Add to Plot

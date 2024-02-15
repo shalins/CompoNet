@@ -1,6 +1,7 @@
+import { Colors } from "../../utils/consts";
 
 export abstract class PlotConstants {
-    static readonly fontFamily = "Times New Roman";
+    static readonly fontFamily = "CMU Serif";
     static readonly fontSize = 14;
     static readonly fontColor = "#000000";
 }
@@ -14,15 +15,15 @@ export abstract class LegendConstants {
 
 export abstract class MarkerConstants {
     static readonly traceColors = [
-        "#669900",
-        "#99cc33",
-        "#006699",
-        "#3399cc",
-        "#990066",
-        "#cc3399",
-        "#ff6600",
-        "#ff9900",
-        "#ffcc00",
+        Colors.berkeleyBlue,
+        Colors.lawrence,
+        Colors.lapLane,
+        Colors.ion,
+        Colors.roseGarden,
+        Colors.stonePine,
+        Colors.californiaGold,
+        Colors.wellmanTile,
+        Colors.southHall,
     ];
     static readonly defaultTraceColor = "#000000";
 

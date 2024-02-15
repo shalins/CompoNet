@@ -201,7 +201,7 @@
 			"computed": false
 		},
 		{
-			"name": "Volume", 
+			"name": "Volume",
 			"column": "volume",
 			"type": 1,
 			"unit": "mm^3",
@@ -301,7 +301,7 @@
 			"computed": true
 		},
 		{
-			"name": "Energy Per Cost", 
+			"name": "Energy Per Cost",
 			"column": "energy_per_cost",
 			"type": 1,
 			"unit": "μJ/$",
