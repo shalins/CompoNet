@@ -12,19 +12,20 @@ import PlotTrace from "./Trace";
 import PlotPoint from "./Point";
 import Alert from "./Alert";
 import { Trace, Point, Axis } from "../utils/types";
-import { YEARS } from "../utils/consts";
+import { DEFAULT_YEAR, YEARS } from "../utils/consts";
 import { LegendConstants, MarkerConstants, PlotConstants } from "./plot/consts";
+import ExportButton from "./ExportButton";
 
 export default function GraphForm() {
   // Selection Parameters
   const [xAxisAttribute, setXAxisAttribute] = useState<string>();
   const [yAxisAttribute, setYAxisAttribute] = useState<string>();
   const [selectedComponent, setSelectedComponent] = useState<string>();
-  const [selectedYear, setSelectedYear] = useState<string>();
+  const [selectedYear, setSelectedYear] = useState<string>(DEFAULT_YEAR);
 
   // Data that corresponds to user selections for the plot
   const [plotTraces, setPlotTraces] = useState<Trace[]>([]);
-  const [plotComponent, setPlotComponent] = useState<Point[]>([]);
+  const [selectedPlotComponents, setSelectedPlotComponents] = useState<Point[]>([]);
 
   // Actual plot data
   const [plotData, setPlotData] = useState<any[]>([]);
@@ -53,7 +54,6 @@ export default function GraphForm() {
 
     const fullDataIdx = event.points[0].fullData.index;
     const ptIdx = event.points[0].pointIndex;
-    // get mpn from components array
     const mpn = components?.[fullDataIdx].mpns[ptIdx];
     const manufacturer = components?.[fullDataIdx].manufacturers[ptIdx];
     const point: Point = {
@@ -63,8 +63,12 @@ export default function GraphForm() {
       color: plotData[fullDataIdx].marker.color[ptIdx],
       manufacturer: manufacturer ?? "",
       link: `https://octopart.com/search?q=${mpn}&view=list`,
+      xAxis: components?.[fullDataIdx].axes[0].data[ptIdx],
+      yAxis: components?.[fullDataIdx].axes[1].data[ptIdx],
+      xUnits: components?.[fullDataIdx].axes[0].unit,
+      yUnits: components?.[fullDataIdx].axes[1].unit,
     };
-    setPlotComponent((prev) => [...prev, point]);
+    setSelectedPlotComponents((prev) => [...prev, point]);
 
     plotData[fullDataIdx].marker.color[ptIdx] = MarkerConstants.selectColor;
     plotData[fullDataIdx].marker.size[ptIdx] = MarkerConstants.selectSize;
@@ -72,7 +76,7 @@ export default function GraphForm() {
   };
 
   const onPlotDeselectPoint = (point: Point, i: number) => {
-    setPlotComponent((prev) => {
+    setSelectedPlotComponents((prev) => {
       plotData[point.fullDataIdx].marker.color[point.ptIdx] = point.color;
       plotData[point.fullDataIdx].marker.size[point.ptIdx] = MarkerConstants.normalSize;
       plotData[point.fullDataIdx].marker.symbol[point.ptIdx] = MarkerConstants.normalSymbol;
@@ -99,7 +103,7 @@ export default function GraphForm() {
 
     // Clear the current selections
     setSelectedComponent(undefined);
-    setSelectedYear(undefined);
+    setSelectedYear(DEFAULT_YEAR);
 
     // Avoid duplicate traces
     if (
@@ -128,7 +132,7 @@ export default function GraphForm() {
       setComponents([]);
       setPlotData([]);
       setPlotLayout({});
-      setPlotComponent([]);
+      setSelectedPlotComponents([]);
       setLoading(false);
     }
 
@@ -211,8 +215,6 @@ MPN: <b>${component.mpns[idx]}</b><br>
   };
 
   const graphLayout = (components: Component[]) => {
-    console.log("IS THIS COMPUTED?", components[0].axes[0]?.computed);
-    console.log("IS THIS COMPUTED?", components[0].axes[1]?.computed);
     const layout: { [key: string]: any } = {
       autosize: true,
       xaxis: {
@@ -220,13 +222,17 @@ MPN: <b>${component.mpns[idx]}</b><br>
         type: "log",
         autorange: true,
         automargin: true,
-        tickformat: components[0].axes[0]?.computed ? ',.2r' : '', 
+        exponentformat: components[0].axes[0]?.computed ? 'power' : 'B', 
+        tickfont: {
+          size: PlotConstants.fontSize,
+          color: PlotConstants.fontColor,
+        },
         ticksuffix:
-          components[0].axes[0]?.affix === Affix.SUFFIX
+          components[0].axes[0]?.affix === Affix.SUFFIX && !components[0].axes[0]?.computed
             ? components[0].axes[0]?.unit
             : "",
         tickprefix:
-          components[0].axes[0]?.affix === Affix.PREFIX
+          components[0].axes[0]?.affix === Affix.PREFIX && !components[0].axes[0]?.computed
             ? components[0].axes[0]?.unit
             : "",
         mirror: true,
@@ -238,13 +244,17 @@ MPN: <b>${component.mpns[idx]}</b><br>
         type: "log",
         autorange: true,
         automargin: true,
-        tickformat: components[0].axes[1]?.computed ? ',.2r' : '', 
+        exponentformat: components[0].axes[1]?.computed ? 'power' : 'B', 
+        tickfont: {
+          size: 12,
+          color: PlotConstants.fontColor,
+        },
         ticksuffix:
-          components[0].axes[1]?.affix === Affix.SUFFIX
+          components[0].axes[1]?.affix === Affix.SUFFIX && !components[0].axes[1]?.computed
             ? components[0].axes[1]?.unit
             : "",
         tickprefix:
-          components[0].axes[1]?.affix === Affix.PREFIX
+          components[0].axes[1]?.affix === Affix.PREFIX && !components[0].axes[1]?.computed
             ? components[0].axes[1]?.unit
             : "",
         mirror: true,
@@ -269,7 +279,6 @@ MPN: <b>${component.mpns[idx]}</b><br>
       },
     };
 
-    layout["title"] = `${xAxisAttribute} vs ${yAxisAttribute}`;
     setPlotLayout(layout);
     return layout;
   };
@@ -349,7 +358,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
             setComponents(components);
             graphData(components);
             graphLayout(components);
-            setPlotComponent([]);
+            setSelectedPlotComponents([]);
           } else {
             const trace = plotTraces.find(
               (t) =>
@@ -484,7 +493,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
             </span>
           )}
           <div className="flex flex-nowrap pt-6">
-            {plotComponent.map((point, i) => {
+            {selectedPlotComponents.map((point, i) => {
               return (
                 <div className="px-2">
                   <PlotPoint
@@ -497,6 +506,7 @@ MPN: <b>${component.mpns[idx]}</b><br>
               );
             })}
           </div>
+          <ExportButton points={selectedPlotComponents} />
         </div>
       </div>
     </div>

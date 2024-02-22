@@ -4,6 +4,10 @@ export abstract class PlotConstants {
     static readonly fontFamily = "CMU Serif";
     static readonly fontSize = 14;
     static readonly fontColor = "#000000";
+    // When we change the exponent format to `power`, e.g. 1^10, it changes the font size of 
+    // the tick to account for the exponent. This is a hack to make the font size of the tick 
+    // the same as the font size of the rest of the plot.
+    static readonly computedPropertyTickFontSize = 12;
 }
 
 export abstract class LegendConstants {

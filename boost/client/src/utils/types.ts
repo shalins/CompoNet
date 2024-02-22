@@ -16,4 +16,8 @@ export type Point = {
   color: string;
   manufacturer: string;
   link: string;
+  xAxis?: number;
+  yAxis?: number;
+  xUnits?: string;
+  yUnits?: string;
 };

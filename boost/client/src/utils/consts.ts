@@ -1,4 +1,5 @@
 export const YEARS = ["2022", "2023"];
+export const DEFAULT_YEAR = "2023";
 
 export abstract class Colors {
     static readonly berkeleyBlue = "#003262";
